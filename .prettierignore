@@ -1,0 +1,46 @@
+# 忽略依賴套件
+node_modules
+
+# 忽略編譯後的輸出
+dist
+build
+
+# 忽略環境變數設定檔
+.env
+.env.*
+
+# 忽略版本控制與鎖檔
+.git
+.gitignore
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 測試覆蓋率報告
+coverage
+
+# Log 檔案與紀錄
+logs
+*.log
+
+# 靜態資源或上傳資料
+public/
+static/
+uploads/
+
+# 忽略 Prettier 自己的 ignore 設定
+.prettierignore
+
+# 圖片與媒體檔案
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
+*.mp4
+*.webm
+
+# 可選：忽略資料庫檔案或 dump 檔
+*.sqlite
+*.sql
+*.dump
