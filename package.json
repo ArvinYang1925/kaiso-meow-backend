@@ -11,9 +11,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "pg": "^8.14.1",
+    "typeorm": "^0.3.22"
   },
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
     "ts-node-dev": "^2.0.0",

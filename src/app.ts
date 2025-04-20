@@ -1,13 +1,29 @@
-import express from "express"; // 載入 Express
+import "reflect-metadata";
+import express from "express";
+import { AppDataSource } from "./config/db";
+import todoRoutes from "./routes/todoRoutes";
+import dotenv from "dotenv";
 
-const app = express(); // 建一個 Express 應用程式
+dotenv.config();
+
+const app = express();
+app.use(express.json());
+
+app.use("/api/todos", todoRoutes); // 加上 Todo 路由
 
 app.get("/", (req, res) => {
-  // 當有人進到首頁時
-  res.send("Hello, TypeScript!"); // 回一句話
+  res.send("Hello, Kaiso Backend!");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+
+AppDataSource.initialize()
+  .then(() => {
+    console.log("📦 DB Connected!");
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ DB connection failed:", err);
+  });
