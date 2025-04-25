@@ -134,3 +134,20 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+
+/**
+ * POST /api/v1/auth/logout
+ */
+export async function logout(req: Request, res: Response, next: NextFunction) {
+  try {
+    // 由於 JWT 是無狀態的，服務端不需要實際操作
+    // 實際的登出動作是在客戶端刪除 token
+
+    res.status(200).json({
+      status: "success",
+      message: "登出成功",
+    });
+  } catch (err) {
+    next(err);
+  }
+}

@@ -9,7 +9,8 @@ export interface AuthRequest extends Request {
 export function isAuth(req: AuthRequest, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) {
-    return res.status(401).json({ status: "failed", message: "請先登入" });
+    res.status(401).json({ status: "failed", message: "請先登入" });
+    return;
   }
   const token = auth.split(" ")[1];
   try {
@@ -17,6 +18,7 @@ export function isAuth(req: AuthRequest, res: Response, next: NextFunction) {
     req.user = payload;
     next();
   } catch {
-    return res.status(401).json({ status: "failed", message: "Token 無效或已過期" });
+    res.status(401).json({ status: "failed", message: "Token 無效或已過期" });
+    return;
   }
 }
