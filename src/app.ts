@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import express from "express";
+import express, { Request, Response } from "express";
 import { AppDataSource } from "./config/db";
 import todoRoutes from "./routes/todoRoutes";
 import userRoutes from "./routes/userRoutes";
@@ -33,6 +33,14 @@ app.use("/api/v1/auth", userRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
+});
+
+// 設定 404 處理中間件
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({
+    status: "failed",
+    message: "無此路由",
+  });
 });
 
 const PORT = process.env.PORT || 3000;
