@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "./config/db";
 import todoRoutes from "./routes/todoRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -40,6 +40,16 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({
     status: "failed",
     message: "無此路由",
+  });
+});
+
+// 設定500 錯誤處理中間件
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  res.status(500).json({
+    status: "error",
+    message: "發生伺服器錯誤",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
