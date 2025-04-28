@@ -1,6 +1,5 @@
-// 將你的 userRoutes.ts 文件修改為：
 import { Router } from "express";
-import { register, login, logout } from "../controllers/userController";
+import { register, login, logout } from "../controllers/authController";
 import { isAuth } from "../middleware/isAuth";
 
 const router = Router();

@@ -1,4 +1,4 @@
-// src/validator/userValidationSchemas.ts
+// src/validator/authValidationSchemas.ts
 import { z } from "zod";
 
 // 密碼規則
