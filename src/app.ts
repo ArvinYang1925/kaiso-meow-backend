@@ -2,7 +2,7 @@ import "reflect-metadata";
 import express, { Request, Response } from "express";
 import { AppDataSource } from "./config/db";
 import todoRoutes from "./routes/todoRoutes";
-import userRoutes from "./routes/userRoutes";
+import authRoutes from "./routes/authRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -29,7 +29,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/todos", todoRoutes); // 加上 Todo 路由
-app.use("/api/v1/auth", userRoutes);
+app.use("/api/v1/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");

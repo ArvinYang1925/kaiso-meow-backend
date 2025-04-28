@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { registerSchema, loginSchema } from "../validator/userValidationSchemas";
+import { registerSchema, loginSchema } from "../validator/authValidationSchemas";
 import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { Student } from "../entities/Student";
