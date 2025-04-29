@@ -48,7 +48,7 @@ app.use((_req: Request, res: Response) => {
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({
     status: "error",
-    message: "發生伺服器錯誤",
+    message: "伺服器發生錯誤",
     error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
