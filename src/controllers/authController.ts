@@ -223,7 +223,6 @@ export async function editStudentProfile(req: AuthRequest, res: Response, next: 
         },
       });
     }
-    //寫到這 待確認
     // 5. 更新 User 資料（如果需要）
     if (needUpdateUser) {
       const userResult = await userRepo.update({ id: userId }, { name });
