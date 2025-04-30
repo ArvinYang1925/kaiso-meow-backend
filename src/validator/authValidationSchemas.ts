@@ -16,6 +16,15 @@ export const emailSchema = z.string().min(1, { message: "Email 為必填" }).ema
 // 名稱規則
 export const nameSchema = z.string().min(1, { message: "姓名為必填" }).max(49, { message: "姓名長度需少於 50" });
 
+// 電話號碼規則
+export const phoneNumberSchema = z
+  .union([
+    z.string().regex(/^[0-9]{10}$/, { message: "電話號碼需為 10 位數字" }),
+    z.literal(""), // 把空字串當作合法輸入
+    z.undefined(),
+  ])
+  .optional();
+
 // Register / Login schema
 export const registerSchema = z.object({
   name: nameSchema,
@@ -26,4 +35,9 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+});
+
+export const editStudentProfileSchema = z.object({
+  name: nameSchema,
+  phoneNumber: phoneNumberSchema,
 });
