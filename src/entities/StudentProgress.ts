@@ -5,7 +5,7 @@ import { Section } from "./Section";
 
 @Entity({ name: "student_progress" })
 export class StudentProgress {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn("uuid", { name: "id" })
   id!: string;
 
   @ManyToOne(() => User, (user) => user.progresses, { onDelete: "CASCADE" })
@@ -20,18 +20,18 @@ export class StudentProgress {
   @JoinColumn({ name: "section_id" })
   section!: Section;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true })
-  progress_percentage!: number;
+  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true, name: "progress_percentage" })
+  progressPercentage?: number;
 
-  @Column({ type: "int", nullable: true })
-  last_position!: number;
+  @Column({ type: "int", nullable: true, name: "last_position" })
+  lastPosition?: number;
 
-  @UpdateDateColumn()
-  updated_at!: Date;
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt!: Date;
 
-  @Column({ type: "int", nullable: true })
-  time_spent!: number;
+  @Column({ type: "int", nullable: true, name: "time_spent" })
+  timeSpent?: number;
 
-  @Column({ default: false })
-  is_completed!: boolean;
+  @Column({ type: "boolean", default: false, nullable: false, name: "is_completed" })
+  isCompleted!: boolean;
 }

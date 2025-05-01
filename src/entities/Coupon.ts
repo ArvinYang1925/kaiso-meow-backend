@@ -2,33 +2,33 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 
 @Entity({ name: "coupons" })
 export class Coupon {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: "id" })
   id!: number;
 
-  @Column({ length: 50, unique: true })
-  coupon_name!: string;
+  @Column({ type: "varchar", length: 50, unique: true, nullable: false, name: "coupon_name" })
+  couponName!: string;
 
-  @Column({ length: 50, unique: true })
+  @Column({ type: "varchar", length: 50, unique: true, nullable: false, name: "code" })
   code!: string;
 
-  @Column({ length: 10 })
-  type!: string; // 'percentage' or 'fixed'
+  @Column({ type: "varchar", length: 10, nullable: false, name: "type" })
+  type!: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 2 })
+  @Column({ type: "decimal", precision: 10, scale: 2, nullable: false, name: "value" })
   value!: number;
 
-  @Column({ type: "timestamp", nullable: true })
-  expires_at!: Date;
+  @Column({ type: "timestamp", nullable: true, name: "expires_at" })
+  expiresAt?: Date;
 
-  @Column({ type: "timestamp", nullable: true })
-  starts_at!: Date;
+  @Column({ type: "timestamp", nullable: true, name: "starts_at" })
+  startsAt?: Date;
 
-  @CreateDateColumn()
-  created_at!: Date;
+  @CreateDateColumn({ name: "created_at" })
+  createdAt!: Date;
 
-  @UpdateDateColumn()
-  updated_at!: Date;
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt!: Date;
 
-  @Column({ type: "timestamp", nullable: true, default: () => "now()" })
-  deleted_at!: Date;
+  @Column({ type: "timestamp", nullable: true, default: () => "now()", name: "deleted_at" })
+  deletedAt?: Date;
 }
