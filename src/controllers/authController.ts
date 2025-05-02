@@ -222,6 +222,7 @@ export async function editStudentProfile(req: AuthRequest, res: Response, next: 
           phoneNumber: student.phoneNumber,
         },
       });
+      return;
     }
     // 5. 更新 User 資料（如果需要）
     if (needUpdateUser) {
