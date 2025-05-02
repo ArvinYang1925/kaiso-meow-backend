@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { registerSchema, loginSchema } from "../validator/authValidationSchemas";
+import { registerSchema, loginSchema, editStudentProfileSchema } from "../validator/authValidationSchemas";
 import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { Student } from "../entities/Student";
 import { hashPassword, comparePassword } from "../utils/passwordUtils";
 import { generateToken } from "../utils/jwtUtils";
 import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middleware/isAuth";
 
 const userRepo = AppDataSource.getRepository(User);
 const studentRepo = AppDataSource.getRepository(Student);
@@ -146,6 +147,120 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
     res.status(200).json({
       status: "success",
       message: "登出成功",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * ＧET /api/v1/auth/profile
+ */
+export async function getStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.id; // 查詢學生資料，包含 user 關聯
+    const student = await studentRepo
+      .createQueryBuilder("student")
+      .leftJoinAndSelect("student.user", "user")
+      .where("student.userId = :userId", { userId })
+      .getOne();
+
+    if (!student) {
+      res.status(404).json({ status: "failed", message: "找不到學生資料" });
+      return;
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        id: student.user.id,
+        name: student.user.name,
+        email: student.user.email,
+        phoneNumber: student.phoneNumber,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * PUT /api/v1/auth/student/profile
+ */
+export async function editStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    // 1. 驗證輸入
+    const parsed = editStudentProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+    const { name, phoneNumber } = parsed.data;
+
+    // 2. 取得使用者 ID
+    const userId = req.user?.id;
+    // 3. 取得現有資料
+    const student = await studentRepo
+      .createQueryBuilder("student")
+      .leftJoinAndSelect("student.user", "user")
+      .where("student.userId = :userId", { userId })
+      .getOne();
+
+    // 4. 檢查是否需要更新
+    const needUpdateUser = name !== student?.user.name;
+    const needUpdateStudent = phoneNumber !== undefined && phoneNumber !== student?.phoneNumber;
+
+    if (!needUpdateUser && !needUpdateStudent) {
+      res.status(200).json({
+        status: "success",
+        message: "資料未變更",
+        data: {
+          id: student.user.id,
+          name: student.user.name,
+          email: student.user.email,
+          phoneNumber: student.phoneNumber,
+        },
+      });
+      return;
+    }
+    // 5. 更新 User 資料（如果需要）
+    if (needUpdateUser) {
+      const userResult = await userRepo.update({ id: userId }, { name });
+      if (userResult.affected === 0) {
+        res.status(404).json({ status: "failed", message: "更新使用者資料失敗" });
+        return;
+      }
+    }
+
+    // 6. 更新 Student 資料（如果需要）
+    if (needUpdateStudent) {
+      const studentResult = await studentRepo.update({ userId }, { phoneNumber });
+      if (studentResult.affected === 0) {
+        res.status(404).json({ status: "failed", message: "更新學生資料失敗" });
+        return;
+      }
+    }
+
+    // 7. 回傳更新後的資料
+    const updatedStudent = await studentRepo
+      .createQueryBuilder("student")
+      .leftJoinAndSelect("student.user", "user")
+      .where("student.userId = :userId", { userId })
+      .getOne();
+
+    if (!updatedStudent) {
+      res.status(404).json({ status: "failed", message: "找不到學生資料" });
+      return;
+    }
+    res.status(200).json({
+      status: "success",
+      data: {
+        id: updatedStudent.user.id,
+        name: updatedStudent.user.name,
+        email: updatedStudent.user.email,
+        phoneNumber: updatedStudent.phoneNumber,
+      },
     });
   } catch (err) {
     next(err);
