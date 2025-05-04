@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 
 @Entity({ name: "coupons" })
 export class Coupon {
@@ -29,6 +29,6 @@ export class Coupon {
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt!: Date;
 
-  @Column({ type: "timestamp", nullable: true, default: () => "now()", name: "deleted_at" })
+  @DeleteDateColumn({ name: "deleted_at" })
   deletedAt?: Date;
 }

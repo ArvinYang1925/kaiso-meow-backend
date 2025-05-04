@@ -33,7 +33,7 @@ export class Section {
   @Column({ type: "boolean", default: false, nullable: false, name: "is_published" })
   isPublished!: boolean;
 
-  @Column({ type: "int", default: 0, nullable: false, name: "order_index" })
+  @Column({ type: "int", nullable: false, name: "order_index" })
   orderIndex!: number;
 
   @CreateDateColumn({ name: "created_at" })

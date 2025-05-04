@@ -39,11 +39,11 @@ export class User {
   instructor?: Instructor;
 
   @OneToMany(() => Order, (order) => order.user)
-  orders!: Order[];
+  orders?: Order[];
 
   @OneToMany(() => StudentProgress, (progress) => progress.user)
-  progresses!: StudentProgress[];
+  progresses?: StudentProgress[];
 
-  @OneToMany(() => NewsletterSubscriber, (subscriber) => subscriber.user)
-  newsletterSubscriptions!: NewsletterSubscriber[];
+  @OneToOne(() => NewsletterSubscriber, (subscriber) => subscriber.user)
+  newsletterSubscriptions?: NewsletterSubscriber[];
 }

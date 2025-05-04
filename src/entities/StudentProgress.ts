@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, UpdateDateColumn, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
 import { User } from "./User";
 import { Course } from "./Course";
 import { Section } from "./Section";
@@ -19,18 +19,6 @@ export class StudentProgress {
   @ManyToOne(() => Section, (section) => section.progresses, { onDelete: "CASCADE" })
   @JoinColumn({ name: "section_id" })
   section!: Section;
-
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: true, name: "progress_percentage" })
-  progressPercentage?: number;
-
-  @Column({ type: "int", nullable: true, name: "last_position" })
-  lastPosition?: number;
-
-  @UpdateDateColumn({ name: "updated_at" })
-  updatedAt!: Date;
-
-  @Column({ type: "int", nullable: true, name: "time_spent" })
-  timeSpent?: number;
 
   @Column({ type: "boolean", default: false, nullable: false, name: "is_completed" })
   isCompleted!: boolean;
