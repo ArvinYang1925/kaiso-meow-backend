@@ -1,0 +1,33 @@
+name: Notify Discord on Pull Request
+
+on:
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  discord-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send message to Discord via curl
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          # 取出 reviewer 名單（可能為空）
+          reviewers=$(jq -r '[.pull_request.requested_reviewers[].login] | join(", ")' "$GITHUB_EVENT_PATH")
+          [ -z "$reviewers" ] && reviewers="(none)"
+
+          {
+            echo "🚀 **Pull Request Update**"
+            echo "- [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})"
+            echo "- **Title:** ${{ github.event.pull_request.title }}"
+            echo "- **Author:** ${{ github.event.pull_request.user.login }}"
+            echo "- **Action:** ${{ github.event.action }}"
+            echo "- **Reviewers:** ${reviewers}"
+          } > message.txt
+
+          jq -n --rawfile content message.txt '{content: $content}' > payload.json
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d @payload.json \
+               "$DISCORD_WEBHOOK"
