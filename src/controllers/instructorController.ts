@@ -3,20 +3,13 @@ import { AppDataSource } from "../config/db";
 import { Instructor } from "../entities/Instructor";
 import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
+import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 
 export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    if (!req.user) {
-      res.status(401).json({
-        status: "failed",
-        message: "請先登入",
-      });
-      return;
-    }
-
     const instructorRepo = AppDataSource.getRepository(Instructor);
     const instructor = await instructorRepo.findOne({
-      where: { userId: req.user.id },
+      where: { userId: req.user?.id },
       relations: ["user"],
     });
 
@@ -44,19 +37,17 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
 }
 
 export async function updateMe(req: AuthRequest, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({
-      status: "failed",
-      message: "請先登入",
-    });
-    return;
-  }
-
   try {
-    const { name, avatar } = req.body;
+    const parsed = updateInstructorProfileSchema.safeParse(req.body);
+    if (!parsed.success) {
+      // const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: "請提供正確的參數" });
+      return;
+    }
+    const { name, avatar } = parsed.data;
     const instructorRepo = AppDataSource.getRepository(Instructor);
     const instructor = await instructorRepo.findOne({
-      where: { userId: req.user.id },
+      where: { userId: req.user?.id },
       relations: ["user"],
     });
 
