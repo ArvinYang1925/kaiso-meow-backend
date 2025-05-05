@@ -40,8 +40,8 @@ export async function updateMe(req: AuthRequest, res: Response, next: NextFuncti
   try {
     const parsed = updateInstructorProfileSchema.safeParse(req.body);
     if (!parsed.success) {
-      // const err = parsed.error.errors[0];
-      res.status(400).json({ status: "failed", message: "請提供正確的參數" });
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
       return;
     }
     const { name, avatar } = parsed.data;
