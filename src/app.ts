@@ -3,6 +3,8 @@ import express, { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "./config/db";
 import todoRoutes from "./routes/todoRoutes";
 import authRoutes from "./routes/authRoutes";
+import instructorRoutes from "./routes/instructorRoutes";
+
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -30,6 +32,7 @@ app.use(express.json());
 
 app.use("/api/todos", todoRoutes); // 加上 Todo 路由
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/instructor", instructorRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");

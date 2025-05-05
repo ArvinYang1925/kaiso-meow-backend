@@ -25,6 +25,11 @@ export const phoneNumberSchema = z
   ])
   .optional();
 
+/**
+ 圖片網址規則
+ */
+export const avatarSchema = z.string().url("請提供有效的圖片 URL").optional();
+
 // Register / Login schema
 export const registerSchema = z.object({
   name: nameSchema,
@@ -40,4 +45,12 @@ export const loginSchema = z.object({
 export const editStudentProfileSchema = z.object({
   name: nameSchema,
   phoneNumber: phoneNumberSchema,
+});
+
+/**
+ 更新講師資料檢查
+ */
+export const updateInstructorProfileSchema = z.object({
+  name: nameSchema,
+  avatar: avatarSchema,
 });
