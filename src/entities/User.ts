@@ -1,9 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, OneToMany } from "typeorm";
 import { Student } from "./Student";
 import { Instructor } from "./Instructor";
-
+import { Order } from "./Order";
+import { StudentProgress } from "./StudentProgress";
+import { NewsletterSubscriber } from "./NewsletterSubscriber";
 export type UserRole = "student" | "instructor";
-
 @Entity({ name: "users" })
 export class User {
   @PrimaryGeneratedColumn("uuid")
@@ -36,4 +37,13 @@ export class User {
 
   @OneToOne(() => Instructor, (instructor) => instructor.user)
   instructor?: Instructor;
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders?: Order[];
+
+  @OneToMany(() => StudentProgress, (progress) => progress.user)
+  progresses?: StudentProgress[];
+
+  @OneToOne(() => NewsletterSubscriber, (subscriber) => subscriber.user)
+  newsletterSubscriptions?: NewsletterSubscriber[];
 }
