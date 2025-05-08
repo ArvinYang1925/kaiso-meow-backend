@@ -3,6 +3,7 @@ import { registerSchema, loginSchema, editStudentProfileSchema } from "../valida
 import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { Student } from "../entities/Student";
+import { NewsletterSubscriber } from "../entities/NewsletterSubscriber";
 import { hashPassword, comparePassword } from "../utils/passwordUtils";
 import { generateToken } from "../utils/jwtUtils";
 import jwt from "jsonwebtoken";
@@ -10,7 +11,7 @@ import { AuthRequest } from "../middleware/isAuth";
 
 const userRepo = AppDataSource.getRepository(User);
 const studentRepo = AppDataSource.getRepository(Student);
-
+const newsletterRepo = AppDataSource.getRepository(NewsletterSubscriber);
 /**
  * POST /api/v1/auth/register
  */
@@ -50,12 +51,23 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     });
     await studentRepo.save(student);
 
-    // 5. 產 token & 計算過期秒數
+    // 5. 檢查並更新電子報訂閱者資料
+    const newsletterSubscriber = await newsletterRepo.findOneBy({ email });
+    if (newsletterSubscriber) {
+      await newsletterRepo.update(
+        { email },
+        {
+          userId: saved.id,
+          name: name, // 更新訂閱者名稱
+        },
+      );
+    }
+    // 6. 產 token & 計算過期秒數
     const token = generateToken({ id: saved.id, role: saved.role });
     const { exp, iat } = jwt.decode(token) as { exp: number; iat: number };
     const expiresIn = exp - iat;
 
-    // 6. 回傳
+    // 7. 回傳
     res.status(201).json({
       status: "success",
       message: "註冊成功",
