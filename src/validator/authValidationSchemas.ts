@@ -1,20 +1,20 @@
 // src/validator/authValidationSchemas.ts
 import { z } from "zod";
 
+// 姓名規則
+export const nameSchema = z.string().min(1, { message: "姓名為必填" }).max(49, { message: "姓名長度需少於 50 個字元" });
+
+// Email 規則
+export const emailSchema = z.string().min(1, { message: "Email 為必填" }).email({ message: "Email 不符合格式" });
+
 // 密碼規則
 export const passwordSchema = z
   .string()
-  .min(8, { message: "密碼為必填" })
-  .max(12, { message: "密碼長度需少於 12" })
+  .min(8, { message: "密碼長度至少 8 個字元" })
+  .max(12, { message: "密碼長度最多 12 個字元" })
   .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,12}$/, {
-    message: "密碼不符合規則",
+    message: "請輸入 8–12 字元密碼，並包含大小寫字母及數字",
   });
-
-// Email 規則
-export const emailSchema = z.string().min(1, { message: "Email 為必填" }).email({ message: "email 不符合格式" });
-
-// 名稱規則
-export const nameSchema = z.string().min(1, { message: "姓名為必填" }).max(49, { message: "姓名長度需少於 50" });
 
 // 電話號碼規則
 export const phoneNumberSchema = z
