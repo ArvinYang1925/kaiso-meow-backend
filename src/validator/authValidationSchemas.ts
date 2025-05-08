@@ -42,6 +42,9 @@ export const loginSchema = z.object({
   password: passwordSchema,
 });
 
+/**
+ 編輯學生資料檢查
+ */
 export const editStudentProfileSchema = z.object({
   name: nameSchema,
   phoneNumber: phoneNumberSchema,
@@ -53,4 +56,12 @@ export const editStudentProfileSchema = z.object({
 export const updateInstructorProfileSchema = z.object({
   name: nameSchema,
   avatar: avatarSchema,
+});
+
+/**
+ 訂閱電子報檢查
+ */
+export const subscribeSchema = z.object({
+  email: emailSchema,
+  name: nameSchema,
 });
