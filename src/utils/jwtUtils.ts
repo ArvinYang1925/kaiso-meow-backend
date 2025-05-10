@@ -29,3 +29,10 @@ export function generateToken(payload: JWTPayload): string {
 export function verifyToken(token: string): JWTPayload {
   return jwt.verify(token, SECRET) as JWTPayload;
 }
+
+/**
+ * 忘記密碼的暫時 JWT
+ */
+export function generateResetPasswordToken(userId: string): string {
+  return jwt.sign({ userId }, SECRET, { expiresIn: "15m" });
+}

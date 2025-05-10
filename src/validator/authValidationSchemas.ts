@@ -65,3 +65,10 @@ export const subscribeSchema = z.object({
   email: emailSchema,
   name: nameSchema,
 });
+
+/**
+ 忘記密碼的eamil檢查
+ */
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
