@@ -12,7 +12,7 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
   try {
     const result = forgotPasswordSchema.safeParse(req.body);
     if (!result.success) {
-      res.status(400).json({ status: "failed", message: "請提供有效的 email 格式", errors: result.error });
+      res.status(400).json({ status: "failed", message: "請提供有效的 email 格式" });
       return;
     }
     const { email } = result.data;
