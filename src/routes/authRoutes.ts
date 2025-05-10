@@ -15,6 +15,6 @@ router.get("/profile", isAuth, isStudent, getStudentProfile);
 router.put("/profile", isAuth, isStudent, editStudentProfile);
 router.post("/password/forgot", sendForgotPasswordEmail);
 router.post("/password/reset", isResetTokenValid, resetPasswordWithToken);
-router.put("/api/v1/auth/password/change", isAuth, changePassword);
+router.put("/password/change", isAuth, changePassword);
 
 export default router; // 確保正確導出 router 對象

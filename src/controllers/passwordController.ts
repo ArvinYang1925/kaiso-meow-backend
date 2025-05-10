@@ -61,10 +61,10 @@ export async function resetPasswordWithToken(req: TokenRequest, res: Response, n
 export async function changePassword(req: AuthRequest, res: Response, next: NextFunction) {
   const result = changePasswordSchema.safeParse(req.body);
   if (!result.success) {
+    const err = result.error.errors[0];
     res.status(400).json({
       status: "failed",
-      message: "密碼格式錯誤",
-      errors: result.error.errors,
+      message: err.message,
     });
     return;
   }
