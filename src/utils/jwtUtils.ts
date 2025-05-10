@@ -7,11 +7,16 @@ export interface JWTPayload {
   role: "student" | "instructor";
 }
 
+// 密碼重設用 token payload
+export interface ResetTokenPayload {
+  userId: string;
+}
+
 // 確保 env 裡有 JWT_SECRET
 if (!process.env.JWT_SECRET) {
   throw new Error("Missing JWT_SECRET in .env");
 }
-const SECRET = process.env.JWT_SECRET; // 類型推斷為 string
+const SECRET = process.env.JWT_SECRET!; // 類型推斷為 string
 
 const EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 
@@ -28,4 +33,18 @@ export function generateToken(payload: JWTPayload): string {
  */
 export function verifyToken(token: string): JWTPayload {
   return jwt.verify(token, SECRET) as JWTPayload;
+}
+
+/**
+ * 產生密碼重設用 token
+ */
+export function generateResetToken(payload: ResetTokenPayload, expiresIn: jwt.SignOptions["expiresIn"] = "15m"): string {
+  return jwt.sign(payload, SECRET, { expiresIn });
+}
+
+/**
+ * 驗證密碼重設用 token
+ */
+export function verifyResetToken(token: string): ResetTokenPayload {
+  return jwt.verify(token, SECRET) as ResetTokenPayload;
 }
