@@ -2,10 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { sendResetPasswordEmail } from "../utils/mailer";
-import { forgotPasswordSchema } from "../validator/authValidationSchemas";
+import { changePasswordSchema, forgotPasswordSchema } from "../validator/authValidationSchemas";
 import { generateResetToken } from "../utils/jwtUtils";
 import { TokenRequest } from "../middleware/isResetTokenValid";
 import bcrypt from "bcryptjs";
+import { AuthRequest } from "../middleware/isAuth";
 
 export async function sendForgotPasswordEmail(req: Request, res: Response, next: NextFunction) {
   try {
@@ -34,22 +35,62 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
   }
 }
 
-export async function resetPasswordWithToken(req: TokenRequest, res: Response) {
-  const { newPassword } = req.body;
-  const { resetPayload } = req;
-
-  const userRepo = AppDataSource.getRepository(User);
-  if (!resetPayload) {
-    res.status(400).json({ status: "failed", message: "無效的 payload" });
+export async function resetPasswordWithToken(req: TokenRequest, res: Response, next: NextFunction) {
+  try {
+    const { newPassword } = req.body;
+    const { resetPayload } = req;
+    const userRepo = AppDataSource.getRepository(User);
+    if (!resetPayload) {
+      res.status(400).json({ status: "failed", message: "無效的 payload" });
+      return;
+    }
+    const user = await userRepo.findOneBy({ id: resetPayload!.userId });
+    if (!user) {
+      res.status(400).json({ status: "failed", message: "使用者不存在" });
+      return;
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await userRepo.save(user);
+    res.json({ status: "success", message: "密碼重新設定成功" });
+  } catch (err) {
+    next(err);
   }
-  const user = await userRepo.findOneBy({ id: resetPayload!.userId });
-  if (!user) {
-    res.status(400).json({ status: "failed", message: "使用者不存在" });
+}
+
+export async function changePassword(req: AuthRequest, res: Response, next: NextFunction) {
+  const result = changePasswordSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({
+      status: "failed",
+      message: "密碼格式錯誤",
+      errors: result.error.errors,
+    });
+    return;
   }
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  user!.password = hashedPassword;
-  await userRepo.save(user!);
+  const { oldPassword, newPassword } = result.data;
+  const userId = req.user?.id;
+  try {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOneBy({ id: userId });
 
-  res.json({ status: "success", message: "密碼重新設定成功" });
+    if (!user) {
+      res.status(401).json({ status: "failed", message: "身份授權失敗" });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      res.status(400).json({ status: "failed", message: "舊密碼有誤，請重新輸入" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await userRepo.save(user);
+
+    res.json({ status: "success", message: "密碼變更成功" });
+  } catch (err) {
+    next(err);
+  }
 }
