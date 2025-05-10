@@ -14,11 +14,11 @@ export class Order {
   @Column({ name: "course_id", type: "uuid", nullable: false })
   courseId!: string;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: false })
-  original_price!: number;
+  @Column({ name: "original_price", type: "decimal", precision: 10, scale: 2, nullable: false })
+  originalPrice!: number;
 
-  @Column({ type: "decimal", precision: 10, scale: 2, nullable: false })
-  order_price!: number;
+  @Column({ name: "order_price", type: "decimal", precision: 10, scale: 2, nullable: false })
+  orderPrice!: number;
 
   @Column({ type: "varchar", length: 20, nullable: false })
   status!: string;
@@ -26,14 +26,14 @@ export class Order {
   @Column({ name: "coupon_id", type: "uuid", nullable: true })
   couponId?: string;
 
-  @CreateDateColumn({ type: "timestamp" })
-  created_at!: Date;
+  @CreateDateColumn({ name: "created_at" })
+  createdAt!: Date;
 
-  @Column({ type: "timestamp", nullable: true })
-  paid_at?: Date;
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt!: Date;
 
-  @UpdateDateColumn({ type: "timestamp" })
-  updated_at!: Date;
+  @Column({ name: "paid_at", type: "timestamp", nullable: true })
+  paidAt?: Date;
 
   @ManyToOne(() => User, (user) => user.orders, { onDelete: "SET NULL" })
   @JoinColumn({ name: "user_id" })
