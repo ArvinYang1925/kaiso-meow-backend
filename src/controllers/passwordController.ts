@@ -3,7 +3,9 @@ import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { sendResetPasswordEmail } from "../utils/mailer";
 import { forgotPasswordSchema } from "../validator/authValidationSchemas";
-import { generateResetPasswordToken } from "../utils/jwtUtils";
+import { generateResetToken } from "../utils/jwtUtils";
+import { TokenRequest } from "../middleware/isResetTokenValid";
+import bcrypt from "bcryptjs";
 
 export async function sendForgotPasswordEmail(req: Request, res: Response, next: NextFunction) {
   try {
@@ -21,7 +23,7 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
       return;
     }
 
-    const token = generateResetPasswordToken(user.id);
+    const token = generateResetToken({ userId: user.id });
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
     await sendResetPasswordEmail(email, resetUrl);
@@ -30,4 +32,24 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
   } catch (err) {
     next(err);
   }
+}
+
+export async function resetPasswordWithToken(req: TokenRequest, res: Response) {
+  const { newPassword } = req.body;
+  const { resetPayload } = req;
+
+  const userRepo = AppDataSource.getRepository(User);
+  if (!resetPayload) {
+    res.status(400).json({ status: "failed", message: "無效的 payload" });
+  }
+  const user = await userRepo.findOneBy({ id: resetPayload!.userId });
+  if (!user) {
+    res.status(400).json({ status: "failed", message: "使用者不存在" });
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  user!.password = hashedPassword;
+  await userRepo.save(user!);
+
+  res.json({ status: "success", message: "密碼重新設定成功" });
 }

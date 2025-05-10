@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { register, login, logout, getStudentProfile, editStudentProfile } from "../controllers/authController";
-import { sendForgotPasswordEmail } from "../controllers/passwordController";
+import { sendForgotPasswordEmail, resetPasswordWithToken } from "../controllers/passwordController";
 
 import { isAuth } from "../middleware/isAuth";
 import { isStudent } from "../middleware/isStudent";
+import { isResetTokenValid } from "../middleware/isResetTokenValid";
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.post("/logout", isAuth, logout);
 router.get("/profile", isAuth, isStudent, getStudentProfile);
 router.put("/profile", isAuth, isStudent, editStudentProfile);
 router.post("/password/forgot", sendForgotPasswordEmail);
+router.post("/password/reset", isResetTokenValid, resetPasswordWithToken);
 
 export default router; // 確保正確導出 router 對象
