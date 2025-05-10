@@ -38,7 +38,6 @@ app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/newsletter", newsletterRoutes);
 app.use("/api/v1/courses", courseRoutes);
 
-
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
 });

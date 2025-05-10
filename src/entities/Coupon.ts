@@ -2,8 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 
 @Entity({ name: "coupons" })
 export class Coupon {
-  @PrimaryGeneratedColumn({ name: "id" })
-  id!: number;
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 
   @Column({ type: "varchar", length: 50, unique: true, nullable: false, name: "coupon_name" })
   couponName!: string;
