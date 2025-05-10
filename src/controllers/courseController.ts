@@ -4,6 +4,9 @@ import { Course } from "../entities/Course";
 import { IsNull } from "typeorm";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 
+/**
+ * API #11 GET /api/v1/courses?page=1&pageSize=9
+ */
 export async function getCourses(req: Request, res: Response, next: NextFunction) {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -47,6 +50,9 @@ export async function getCourses(req: Request, res: Response, next: NextFunction
   }
 }
 
+/**
+ * API #12 GET /api/v1/courses/:courseId
+ */
 export async function getCourseDetail(req: Request, res: Response, next: NextFunction) {
   try {
     const { courseId } = req.params;

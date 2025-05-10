@@ -12,8 +12,9 @@ import { AuthRequest } from "../middleware/isAuth";
 const userRepo = AppDataSource.getRepository(User);
 const studentRepo = AppDataSource.getRepository(Student);
 const newsletterRepo = AppDataSource.getRepository(NewsletterSubscriber);
+
 /**
- * POST /api/v1/auth/register
+ * API #4 POST /api/v1/auth/register
  */
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -89,7 +90,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 }
 
 /**
- * POST /api/v1/auth/login
+ * API #5 POST /api/v1/auth/login
  */
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
@@ -149,7 +150,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * POST /api/v1/auth/logout
+ * API #4 POST /api/v1/auth/logout
  */
 export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
@@ -166,7 +167,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * ＧET /api/v1/auth/profile
+ * API #4 ＧET /api/v1/auth/profile
  */
 export async function getStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -197,7 +198,7 @@ export async function getStudentProfile(req: AuthRequest, res: Response, next: N
 }
 
 /**
- * PUT /api/v1/auth/student/profile
+ * API #4 PUT /api/v1/auth/student/profile
  */
 export async function editStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
