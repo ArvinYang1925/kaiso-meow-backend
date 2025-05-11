@@ -25,7 +25,7 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
     }
 
     const token = generateResetToken({ userId: user.id });
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}#/reset-password/${token}`;
 
     await sendResetPasswordEmail(email, resetUrl);
 

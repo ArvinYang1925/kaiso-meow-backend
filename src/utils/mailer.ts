@@ -12,6 +12,13 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendResetPasswordEmail(email: string, resetUrl: string) {
+  const { SMTP_USER, SMTP_PASS } = process.env;
+
+  if (!SMTP_USER || !SMTP_PASS) {
+    console.error("❌ [Mailer 初始化失敗] 缺少 SMTP_USER 或 SMTP_PASS！");
+    throw new Error("寄信設定錯誤：SMTP 環境變數未設定");
+  }
+
   const mailOptions = {
     from: process.env.SMTP_USER,
     to: email,
