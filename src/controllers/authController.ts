@@ -150,7 +150,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * API #4 POST /api/v1/auth/logout
+ * API #8 POST /api/v1/auth/logout
  */
 export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
@@ -167,7 +167,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * API #4 ＧET /api/v1/auth/profile
+ * API #1 ＧET /api/v1/auth/profile
  */
 export async function getStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -198,7 +198,7 @@ export async function getStudentProfile(req: AuthRequest, res: Response, next: N
 }
 
 /**
- * API #4 PUT /api/v1/auth/student/profile
+ * API #2 PUT /api/v1/auth/student/profile
  */
 export async function editStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
