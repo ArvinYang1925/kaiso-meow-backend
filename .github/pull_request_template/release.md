@@ -1,11 +1,19 @@
-### 🚀 發布 / 部署說明
-請列出這次發布的版本內容與重點。
+---
+name: "🚀 Release"
+about: "版本發布"
+title: "Release: "
+labels: ["release"]
+assignees: []
+---
 
-### ✅ 發布內容
-- 版本號：
-- 更新重點：
-- 是否包含破壞性變更：是 / 否
+### 🚀 發布說明
+- 發布版本：
+- 發布項目摘要：
+- 是否包含重大變更（breaking changes）：是 / 否
 
-### 📢 注意事項
-- 部署環境：
-- 是否需要通知特定人員 / 團隊：
+### ✅ 包含 PR / 變更項目
+- [ ] Feature
+- [ ] Bug Fix
+- [ ] Refactor
+- [ ] Docs
+- [ ] Other
