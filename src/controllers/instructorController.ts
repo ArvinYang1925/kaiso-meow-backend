@@ -5,6 +5,9 @@ import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
 import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 
+/**
+ * API #26 GET /api/v1/instructor/me
+ */
 export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const instructorRepo = AppDataSource.getRepository(Instructor);
@@ -36,6 +39,9 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
   }
 }
 
+/**
+ * API #27 PUT /api/v1/instructor/me
+ */
 export async function updateMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const parsed = updateInstructorProfileSchema.safeParse(req.body);

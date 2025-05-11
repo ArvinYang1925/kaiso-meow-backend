@@ -6,6 +6,9 @@ import { subscribeSchema } from "../validator/authValidationSchemas";
 
 const newsletterRepository = AppDataSource.getRepository(NewsletterSubscriber);
 
+/**
+ * API #7 POST /api/v1/newsletter/subscribe
+ */
 export async function subscribeNewsletter(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     // 驗證請求數據
