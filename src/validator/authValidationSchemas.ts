@@ -65,3 +65,35 @@ export const subscribeSchema = z.object({
   email: emailSchema,
   name: nameSchema,
 });
+
+/**
+ 忘記密碼的eamil檢查
+ */
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+/**
+ 重設密碼檢查
+ */
+export const changePasswordSchema = z
+  .object({
+    oldPassword: passwordSchema,
+    newPassword: passwordSchema,
+    confirmNewPassword: passwordSchema,
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "新密碼與確認密碼不一致",
+    path: ["confirmNewPassword"],
+  })
+  .refine((data) => data.oldPassword !== data.newPassword, {
+    message: "舊密碼與新密碼不能相同",
+    path: ["newPassword"],
+  });
+
+/**
+ 設定新密碼檢查
+ */
+export const resetPasswordSchema = z.object({
+  newPassword: passwordSchema,
+});
