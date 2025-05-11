@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { User } from "../entities/User";
 import { sendResetPasswordEmail } from "../utils/mailer";
-import { changePasswordSchema, forgotPasswordSchema } from "../validator/authValidationSchemas";
+import { changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "../validator/authValidationSchemas";
 import { generateResetToken } from "../utils/jwtUtils";
 import { TokenRequest } from "../middleware/isResetTokenValid";
 import bcrypt from "bcryptjs";
@@ -37,6 +37,12 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
 
 export async function resetPasswordWithToken(req: TokenRequest, res: Response, next: NextFunction) {
   try {
+    const result = resetPasswordSchema.safeParse(req.body);
+    if (!result.success) {
+      const err = result.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
     const { newPassword } = req.body;
     const { resetPayload } = req;
     const userRepo = AppDataSource.getRepository(User);

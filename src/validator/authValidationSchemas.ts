@@ -90,3 +90,10 @@ export const changePasswordSchema = z
     message: "舊密碼與新密碼不能相同",
     path: ["newPassword"],
   });
+
+/**
+ 設定新密碼檢查
+ */
+export const resetPasswordSchema = z.object({
+  newPassword: passwordSchema,
+});
