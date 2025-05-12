@@ -8,6 +8,13 @@ import { TokenRequest } from "../middleware/isResetTokenValid";
 import bcrypt from "bcryptjs";
 import { AuthRequest } from "../middleware/isAuth";
 
+/**
+ * API #6 POST - `/api/v1/auth/password/forgot`
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-password-forgot-1d06a24685188017bbd6ed92d12b53e5)
+ *
+ * 此 API 用於當使用者忘記密碼時，寄送一封重設密碼的信件。
+ */
 export async function sendForgotPasswordEmail(req: Request, res: Response, next: NextFunction) {
   try {
     const result = forgotPasswordSchema.safeParse(req.body);
@@ -35,6 +42,13 @@ export async function sendForgotPasswordEmail(req: Request, res: Response, next:
   }
 }
 
+/**
+ * API #9 POST - `/api/v1/auth/password/reset`
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-password-reset-1d66a246851880d3ab2fe578356f79db?pvs=4)
+ *
+ * 此 API 用於完成密碼重設。前端會攜帶從 email 取得的 token 以及新密碼，系統會驗證 token 並設定新密碼。成功後即可使用新密碼登入。
+ */
 export async function resetPasswordWithToken(req: TokenRequest, res: Response, next: NextFunction) {
   try {
     const result = resetPasswordSchema.safeParse(req.body);
@@ -64,6 +78,13 @@ export async function resetPasswordWithToken(req: TokenRequest, res: Response, n
   }
 }
 
+/**
+ * API #3 POST - `/api/v1/auth/password/change`
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-auth-password-change-1d06a24685188087a53de0074a325575?pvs=4)
+ *
+ * 此 API 學生登入後，讓學生更新自己的登入密碼。
+ */
 export async function changePassword(req: AuthRequest, res: Response, next: NextFunction) {
   const result = changePasswordSchema.safeParse(req.body);
   if (!result.success) {
