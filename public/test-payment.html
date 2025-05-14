@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>測試綠界金流</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+        .step {
+            opacity: 0.5;
+        }
+        .step.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>測試結帳流程</h1>
+    
+    <!-- 步驟 0: 登入 -->
+    <div class="card step active">
+        <h2>步驟 0: 登入</h2>
+        <div>
+            <label>Email：</label>
+            <input type="email" id="email" value="123@mail.com" />
+            <label>密碼：</label>
+            <input type="password" id="password" value="12345678Aa" />
+            <button onclick="login()">登入</button>
+        </div>
+        <div id="loginResult"></div>
+    </div>
+
+    <!-- 步驟 1: 建立訂單 -->
+    <div class="card step">
+        <h2>步驟 1: 建立訂單</h2>
+        <div>
+            <label>課程 ID：</label>
+            <input type="text" id="courseId" />
+            <button onclick="createOrder()">建立訂單</button>
+        </div>
+        <div id="orderResult"></div>
+    </div>
+
+    <!-- 步驟 2: 訂單資訊 -->
+    <div class="card step">
+        <h2>步驟 2: 訂單資訊</h2>
+        <div id="orderInfo"></div>
+    </div>
+
+    <!-- 步驟 3: 結帳 -->
+    <div class="card step">
+        <h2>步驟 3: 結帳</h2>
+        <button id="checkoutBtn" onclick="checkout()" disabled>進行結帳</button>
+        <div id="checkoutResult"></div>
+    </div>
+
+    <script>
+        let TOKEN = '';
+        let currentOrderId = '';
+        const API_BASE = 'http://localhost:3000/api/v1';
+
+        // 修改登入函數，返回 Promise
+        async function login() {
+            try {
+                const email = "123@mail.com";
+                const password = "12345678Aa";
+                
+                console.log('開始登入...');
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+                console.log('登入結果:', result);
+
+                if (result.status === 'success') {
+                    TOKEN = result.data.token;
+                    document.getElementById('loginResult').innerHTML = `
+                        <p style="color: green">登入成功！</p>
+                    `;
+                    return true;
+                } else {
+                    document.getElementById('loginResult').innerHTML = `
+                        <p class="error">登入失敗：${result.message}</p>
+                    `;
+                    return false;
+                }
+            } catch (error) {
+                console.error('登入錯誤:', error);
+                document.getElementById('loginResult').innerHTML = `
+                    <p class="error">登入發生錯誤：${error.message}</p>
+                `;
+                return false;
+            }
+        }
+
+        async function createOrder() {
+            if (!TOKEN) {
+                alert('請先登入');
+                return;
+            }
+            try {
+                const courseId = document.getElementById('courseId').value;
+                if (!courseId) {
+                    alert('請輸入課程 ID');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/orders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${TOKEN}`
+                    },
+                    body: JSON.stringify({ courseId })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    currentOrderId = result.data.id;
+                    document.getElementById('orderResult').innerHTML = `
+                        <p>訂單建立成功！</p>
+                        <p>訂單 ID: ${result.data.id}</p>
+                        <p>金額: ${result.data.orderPrice}</p>
+                    `;
+                    document.getElementById('checkoutBtn').disabled = false;
+                    
+                    // 顯示訂單詳細資訊
+                    await showOrderDetails(result.data.id);
+                    
+                    // 成功後啟用下一步
+                    document.querySelectorAll('.step')[2].classList.add('active');
+                } else {
+                    document.getElementById('orderResult').innerHTML = `
+                        <p class="error">錯誤：${result.message}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('orderResult').innerHTML = `
+                    <p class="error">發生錯誤：${error.message}</p>
+                `;
+            }
+        }
+
+        async function showOrderDetails(orderId) {
+            try {
+                console.log('正在獲取訂單資訊...', orderId);
+                console.log('使用 Token:', TOKEN);
+
+                const response = await fetch(`${API_BASE}/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`
+                    }
+                });
+
+                console.log('訂單 API 回應狀態:', response.status);
+                const result = await response.json();
+                console.log('訂單資訊:', result);
+
+                if (result.status === 'success') {
+                    document.getElementById('orderInfo').innerHTML = `
+                        <h3>訂單詳情</h3>
+                        <p>課程：${result.data.course.title}</p>
+                        <p>原價：${result.data.originalPrice}</p>
+                        <p>實付金額：${result.data.orderPrice}</p>
+                        <p>訂單狀態：${result.data.status}</p>
+                        <p>建立時間：${result.data.createdAt}</p>
+                        ${result.data.paidAt ? `<p>付款時間：${result.data.paidAt}</p>` : ''}
+                    `;
+                } else {
+                    document.getElementById('orderInfo').innerHTML = `
+                        <p class="error">獲取訂單失敗：${result.message}</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('獲取訂單錯誤:', error);
+                document.getElementById('orderInfo').innerHTML = `
+                    <p class="error">獲取訂單資訊失敗：${error.message}</p>
+                `;
+            }
+        }
+
+        async function checkout() {
+            if (!TOKEN) {
+                alert('請先登入');
+                return;
+            }
+            try {
+                if (!currentOrderId) {
+                    alert('請先建立訂單');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/orders/${currentOrderId}/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${TOKEN}`
+                    }
+                });
+
+                       // 直接用 document.write 寫入並自動跳轉
+                    document.write(await response.text());
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('checkoutResult').innerHTML = `
+                    <p class="error">結帳發生錯誤：${error.message}</p>
+                `;
+            }
+        }
+
+        // 初始化函數
+        async function initialize() {
+            console.log('頁面初始化開始...');
+            
+            // 1. 先執行登入
+            const loginSuccess = await login();
+            console.log('登入狀態:', loginSuccess);
+
+            if (loginSuccess) {
+                // 2. 檢查 URL 參數
+                const urlParams = new URLSearchParams(window.location.search);
+                const orderId = urlParams.get('orderId');
+                console.log('從 URL 獲取的訂單 ID:', orderId);
+
+                if (orderId) {
+                    currentOrderId = orderId;
+                    console.log('準備獲取訂單詳情...');
+                    await showOrderDetails(orderId);
+                    document.querySelectorAll('.step').forEach(step => step.classList.add('active'));
+                }
+            }
+        }
+
+        // 頁面載入時執行初始化
+        window.onload = initialize;
+    </script>
+</body>
+</html>

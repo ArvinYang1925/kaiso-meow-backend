@@ -9,13 +9,14 @@ import courseRoutes from "./routes/courseRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
 
 const app = express();
 
 // 允許 cors 白名單設定
-const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173"];
+const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173", "http://localhost:3000"];
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -38,6 +39,9 @@ app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/newsletter", newsletterRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/orders", orderRoutes);
+
+// 加入靜態檔案服務
+app.use(express.static(path.join(__dirname, "../public")));
 
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
