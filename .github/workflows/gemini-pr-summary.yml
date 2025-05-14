@@ -1,0 +1,33 @@
+name: 🤖 Generate PR Summary with Gemini (Node.js)
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  gemini-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Get PR Diff
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} > /tmp/pr.diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Gemini summary script
+        run: node scripts/generate-pr-summary.js
+        env:
+          GEMINI_API_JSON: ${{ secrets.GEMINI_API_JSON }}
+
+      - name: Leave PR Comment with Summary
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file pr_summary.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
