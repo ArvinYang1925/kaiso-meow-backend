@@ -5,6 +5,7 @@ import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
 import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 import { paginationSchema } from "../validator/commonValidationSchemas";
+import { getInstructorIdByUserId } from "../utils/instructorUtils";
 
 /**
  * API #26 GET /api/v1/instructor/me
@@ -103,15 +104,11 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
 
     const { page, pageSize } = result.data;
 
-    // 取得 instructorId
-    const instructor = await AppDataSource.getRepository(Instructor).findOne({
-      where: { userId },
-    });
-
-    if (!instructor) {
+    const instructorId = await getInstructorIdByUserId(userId);
+    if (!instructorId) {
       res.status(403).json({
         status: "failed",
-        message: "查無講師資料，請確認帳號角色",
+        message: "查無講師資料",
       });
       return;
     }
@@ -121,7 +118,7 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       .createQueryBuilder("user")
       .innerJoin("user.orders", "order")
       .innerJoin("order.course", "course")
-      .where("course.instructorId = :instructorId", { instructorId: instructor.id })
+      .where("course.instructorId = :instructorId", { instructorId: instructorId })
       .andWhere("user.role = :role", { role: "student" })
       .andWhere("order.paidAt IS NOT NULL")
       .skip((page - 1) * pageSize)
@@ -133,7 +130,7 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       id: s.id,
       name: s.name,
       email: s.email,
-      phoneNumber: s.profileUrl || "", // 替代 phone 欄位（若未設置）
+      phoneNumber: s.profileUrl || "",
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     }));
