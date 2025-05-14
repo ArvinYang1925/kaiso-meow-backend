@@ -16,6 +16,10 @@ jobs:
           reviewers=$(jq -r '[.pull_request.requested_reviewers[].login] | join(", ")' "$GITHUB_EVENT_PATH")
           [ -z "$reviewers" ] && reviewers="(none)"
 
+          # 取出 labels（可能為空）
+          labels=$(jq -r '[.pull_request.labels[].name] | join(", ")' "$GITHUB_EVENT_PATH")
+          [ -z "$labels" ] && labels="(none)"
+
           {
             echo "🚀 **Pull Request Update**"
             echo "- [#${{ github.event.pull_request.number }}](${{ github.event.pull_request.html_url }})"
@@ -23,6 +27,7 @@ jobs:
             echo "- **Author:** ${{ github.event.pull_request.user.login }}"
             echo "- **Action:** ${{ github.event.action }}"
             echo "- **Reviewers:** ${reviewers}"
+            echo "- **Labels:** ${labels}"
           } > message.txt
 
           jq -n --rawfile content message.txt '{content: $content}' > payload.json

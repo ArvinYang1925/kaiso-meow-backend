@@ -6,7 +6,7 @@ import authRoutes from "./routes/authRoutes";
 import instructorRoutes from "./routes/instructorRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
 import courseRoutes from "./routes/courseRoutes";
-
+import orderRoutes from "./routes/orderRoutes";
 import cors from "cors";
 import dotenv from "dotenv";
 
@@ -37,6 +37,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/newsletter", newsletterRoutes);
 app.use("/api/v1/courses", courseRoutes);
+app.use("/api/v1/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
