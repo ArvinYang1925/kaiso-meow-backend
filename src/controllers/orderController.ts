@@ -322,3 +322,75 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
     next(error);
   }
 }
+/**
+ * API #15 GET /api/v1/orders/:orderId
+ */
+export async function getOrderDetail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderId } = req.params;
+
+    // 1. 驗證 orderId 格式
+    const parsed = uuidSchema.safeParse(orderId);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: `orderId ${err.message}` });
+      return;
+    }
+
+    // 2. 查詢訂單詳情，加入 user 和 student 關聯
+    const order = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.course", "course")
+      .leftJoinAndSelect("order.coupon", "coupon")
+      .leftJoinAndSelect("order.user", "user")
+      .leftJoinAndSelect("user.student", "student")
+      .where("order.id = :orderId", { orderId })
+      .andWhere("order.userId = :userId", { userId: req.user!.id })
+      .getOne();
+
+    if (!order) {
+      res.status(400).json({
+        status: "failed",
+        message: "無此訂單",
+      });
+      return;
+    }
+
+    // 3. 格式化回傳資料
+    const orderDetail = {
+      id: order.id,
+      originalPrice: order.originalPrice,
+      orderPrice: order.orderPrice,
+      status: ORDER_STATUS_MAP[order.status as keyof typeof ORDER_STATUS_MAP] || order.status,
+      createdAt: formatDate(order.createdAt),
+      updatedAt: formatDate(order.updatedAt),
+      paidAt: order.paidAt ? formatDate(order.paidAt) : null,
+      course: {
+        title: order.course.title,
+        coverUrl: order.course.coverUrl,
+      },
+      coupon: order.coupon
+        ? {
+            couponValue: order.coupon.value,
+            couponCode: order.coupon.code,
+            couponType: order.coupon.type,
+            couponName: order.coupon.couponName,
+          }
+        : null,
+      user: {
+        id: order.user.id,
+        name: order.user.name,
+        phoneNumber: order.user.student?.phoneNumber || "",
+        email: order.user.email,
+      },
+    };
+
+    // 4. 回傳結果
+    res.json({
+      status: "success",
+      data: orderDetail,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
