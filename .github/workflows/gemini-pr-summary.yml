@@ -27,7 +27,7 @@ jobs:
         env:
           GEMINI_API_JSON: ${{ secrets.GEMINI_API_JSON }}
 
-      - name: Update PR Body
-        run: gh pr edit ${{ github.event.pull_request.number }} --body-file pr_summary.md
+      - name: Leave PR Comment with Summary
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file pr_summary.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
