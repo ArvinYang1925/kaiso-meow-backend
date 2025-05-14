@@ -1,5 +1,7 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
+import { options } from "../config/ecpay";
+import ecpay_payment from "ecpay_aio_nodejs";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
@@ -16,6 +18,9 @@ const ORDER_STATUS_MAP = {
   failed: "付款失敗",
 } as const;
 
+// 在檔案開頭加入環境變數
+const MERCHANTID = process.env.ECPAY_MERCHANT_ID!;
+const HOST = process.env.BACKEND_URL!;
 /**
  * API #10 GET /api/v1/orders
  */
@@ -456,6 +461,115 @@ export async function applyCoupon(req: AuthRequest, res: Response, next: NextFun
       },
     });
   } catch (error) {
+    next(error);
+  }
+}
+/**
+ * API #17 POST /api/v1/orders/:orderId/checkout
+ */
+export async function checkoutOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderId } = req.params;
+
+    // 1. 驗證 orderId 格式
+    const parsed = uuidSchema.safeParse(orderId);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: `orderId ${err.message}` });
+      return;
+    }
+
+    // 2. 查詢訂單資訊
+    const order = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.course", "course")
+      .where("order.id = :orderId", { orderId })
+      .andWhere("order.userId = :userId", { userId: req.user!.id })
+      .getOne();
+
+    if (!order) {
+      res.status(400).json({
+        status: "failed",
+        message: "無此訂單",
+      });
+      return;
+    }
+
+    // 3. 產生訂單編號
+    const orderPrefix = orderId.substring(0, 7);
+    const MerchantTradeNo = `${orderPrefix}${new Date().getTime()}`;
+
+    // 4. 產生交易時間
+    const MerchantTradeDate = new Date().toLocaleDateString("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+
+    // 5. 準備交易資料
+    const base_param = {
+      MerchantID: MERCHANTID,
+      MerchantTradeNo: MerchantTradeNo,
+      MerchantTradeDate: MerchantTradeDate,
+      PaymentType: "aio",
+      TotalAmount: Math.round(order.orderPrice).toString(),
+      TradeDesc: "課程購買",
+      ItemName: order.course.title,
+      ReturnURL: `${HOST}/api/v1/orders/${orderId}/payment-callback`,
+      ClientBackURL: `${HOST}/test-payment.html?orderId=${orderId}`,
+      ChoosePayment: "ALL",
+    };
+
+    // 6. 建立綠界付款頁面
+    const create = new ecpay_payment(options);
+    const html = create.payment_client.aio_check_out_all(base_param);
+    //console.log("html:", html);
+    // 7. 回傳 HTML
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+}
+/**
+ * API #18 POST /api/v1/orders/:orderId/payment-callback
+ * 綠界付款回調處理
+ */
+export async function PaymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderId } = req.params;
+    const { RtnCode, PaymentDate } = req.body;
+
+    console.log("Payment callback received:", req.body);
+
+    // 1. 查詢訂單
+    const order = await AppDataSource.getRepository(Order).createQueryBuilder("order").where("order.id = :orderId", { orderId }).getOne();
+
+    if (!order) {
+      console.error("Order not found:", orderId);
+      res.status(400).send("Order not found");
+      return;
+    }
+
+    // 2. 更新訂單狀態
+    // RtnCode = 1 為付款成功
+    if (RtnCode === "1") {
+      order.status = "paid";
+      order.paidAt = new Date(PaymentDate);
+    } else {
+      order.status = "failed";
+    }
+
+    // 3. 儲存更新
+    await AppDataSource.getRepository(Order).save(order);
+
+    // 4. 回應綠界
+    res.send("1|OK");
+  } catch (error) {
+    console.error("Payment callback error:", error);
     next(error);
   }
 }
