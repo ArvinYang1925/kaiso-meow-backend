@@ -20,7 +20,8 @@ const ORDER_STATUS_MAP = {
 
 // 在檔案開頭加入環境變數
 const MERCHANTID = process.env.ECPAY_MERCHANT_ID!;
-const HOST = process.env.BACKEND_URL!;
+const BACKEND_URL = process.env.BACKEND_URL!;
+const FRONTEND_URL = process.env.FRONTEND_URL!;
 /**
  * API #10 GET /api/v1/orders
  */
@@ -519,8 +520,8 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
       TotalAmount: Math.round(order.orderPrice).toString(),
       TradeDesc: "課程購買",
       ItemName: order.course.title,
-      ReturnURL: `${HOST}/api/v1/orders/${orderId}/payment-callback`,
-      ClientBackURL: `${HOST}/test-payment.html?orderId=${orderId}`,
+      ReturnURL: `${BACKEND_URL}/api/v1/orders/${orderId}/payment-callback`,
+      ClientBackURL: `${FRONTEND_URL}/test-payment.html?orderId=${orderId}`,
       ChoosePayment: "ALL",
     };
 

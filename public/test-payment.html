@@ -37,6 +37,9 @@
             opacity: 1;
         }
     </style>
+    <script>
+        window.BACKEND_URL = 'https://kaiso-meow-backend-test0514.onrender.com';
+    </script>
 </head>
 <body>
     <h1>測試結帳流程</h1>
@@ -81,7 +84,7 @@
     <script>
         let TOKEN = '';
         let currentOrderId = '';
-        const API_BASE = 'http://localhost:3000/api/v1';
+        const API_BASE = `${window.BACKEND_URL}/api/v1`;
 
         // 修改登入函數，返回 Promise
         async function login() {
