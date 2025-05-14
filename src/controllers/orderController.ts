@@ -6,6 +6,7 @@ import { User } from "../entities/User";
 import { Order } from "../entities/Order";
 import { Coupon } from "../entities/Coupon";
 import { formatDate } from "../utils/dateUtils";
+import { validateCouponStatus } from "../utils/couponUtils";
 import { paginationSchema, uuidSchema } from "../validator/commonValidationSchemas";
 
 // 訂單狀態對應的中文說明
@@ -389,6 +390,70 @@ export async function getOrderDetail(req: AuthRequest, res: Response, next: Next
     res.json({
       status: "success",
       data: orderDetail,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+/**
+ * API #16 POST /api/v1/orders/preview/apply-coupon
+ */
+export async function applyCoupon(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { couponCode, originalPrice } = req.body;
+
+    // 1. 檢查必要參數
+    if (!couponCode) {
+      res.status(400).json({
+        status: "failed",
+        message: "請輸入折扣碼",
+      });
+      return;
+    }
+
+    // 2. 查詢優惠券
+    const coupon = await AppDataSource.getRepository(Coupon)
+      .createQueryBuilder("coupon")
+      .where("coupon.code = :code", { code: couponCode })
+      .getOne();
+    console.log("輸入的折扣碼:", couponCode);
+    console.log("查詢參數:", { code: couponCode });
+    console.log("查詢結果:", coupon);
+
+    // 3. 驗證優惠券狀態
+    const validationResult = validateCouponStatus(coupon);
+    if (!validationResult.isValid) {
+      res.status(400).json({
+        status: "failed",
+        message: validationResult.message,
+      });
+      return;
+    }
+
+    // 4. 計算折扣後價格
+    let discountedPrice = originalPrice;
+    if (coupon && coupon.type === "fixed") {
+      discountedPrice = Math.max(0, originalPrice - coupon.value);
+    } else if (coupon && coupon.type === "percentage") {
+      discountedPrice = Math.round(originalPrice * (1 - coupon.value / 100));
+    }
+
+    // 5. 回傳結果
+    res.json({
+      status: "success",
+      data: {
+        coupon: {
+          id: coupon!.id,
+          value: coupon!.value,
+          code: coupon!.code,
+          type: coupon!.type,
+          couponName: coupon!.couponName,
+        },
+        order: {
+          orderPrice: discountedPrice,
+          originalPrice,
+        },
+      },
     });
   } catch (error) {
     next(error);
