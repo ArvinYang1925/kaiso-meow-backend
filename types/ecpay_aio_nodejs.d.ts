@@ -40,9 +40,9 @@ declare module "ecpay_aio_nodejs" {
     constructor(options: EcpayOptions);
     payment_client: {
       aio_check_out_all: (params: EcpayPaymentParams) => string;
-    };
-    helper: {
-      gen_chk_mac_value: (params: Record<string, string | undefined>) => string;
+      helper: {
+        gen_chk_mac_value: (params: Record<string, string | undefined>) => string;
+      };
     };
   }
 }

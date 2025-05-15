@@ -16,7 +16,12 @@ dotenv.config();
 const app = express();
 
 // 允許 cors 白名單設定
-const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173", "http://localhost:3000"];
+const whitelist = [
+  "https://kaiso-meow-frontend.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://kaiso-meow-backend-test0514.onrender.com",
+];
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -32,6 +37,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/todos", todoRoutes); // 加上 Todo 路由
 app.use("/api/v1/auth", authRoutes);

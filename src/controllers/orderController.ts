@@ -542,7 +542,12 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
  */
 export async function PaymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    console.log("Payment callback received:", req.body);
+    if (!req.body) {
+      console.error("No request body received");
+      res.status(400).send("No request body");
+      return;
+    }
+
     const body = req.body as EcpayCallbackBody;
     const { orderId } = req.params;
     const { RtnCode, TradeDate, CheckMacValue } = body;
@@ -552,7 +557,7 @@ export async function PaymentCallback(req: Request, res: Response, next: NextFun
     delete data.CheckMacValue;
 
     const create = new ecpay_payment(options);
-    const checkValue = create.helper.gen_chk_mac_value(data);
+    const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
 
     console.log("驗證資訊:", {
       received: CheckMacValue,
