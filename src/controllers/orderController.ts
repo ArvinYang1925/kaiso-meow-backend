@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { options } from "../config/ecpay";
 import ecpay_payment from "ecpay_aio_nodejs";
+import { EcpayCallbackBody } from "ecpay_aio_nodejs";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
@@ -541,12 +542,31 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
  */
 export async function PaymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { orderId } = req.params;
-    const { RtnCode, PaymentDate } = req.body;
-
     console.log("Payment callback received:", req.body);
+    const body = req.body as EcpayCallbackBody;
+    const { orderId } = req.params;
+    const { RtnCode, TradeDate, CheckMacValue } = body;
 
-    // 1. 查詢訂單
+    //1 .驗證 CheckMacValue
+    const data = { ...body };
+    delete data.CheckMacValue;
+
+    const create = new ecpay_payment(options);
+    const checkValue = create.helper.gen_chk_mac_value(data);
+
+    console.log("驗證資訊:", {
+      received: CheckMacValue,
+      generated: checkValue,
+      isValid: CheckMacValue === checkValue,
+    });
+
+    if (CheckMacValue !== checkValue) {
+      console.error("CheckMacValue 驗證失敗");
+      res.status(400).send("Invalid CheckMacValue");
+      return;
+    }
+
+    // 2. 查詢訂單
     const order = await AppDataSource.getRepository(Order).createQueryBuilder("order").where("order.id = :orderId", { orderId }).getOne();
 
     if (!order) {
@@ -555,11 +575,11 @@ export async function PaymentCallback(req: Request, res: Response, next: NextFun
       return;
     }
 
-    // 2. 更新訂單狀態
+    // 3. 更新訂單狀態
     // RtnCode = 1 為付款成功
     if (RtnCode === "1") {
       order.status = "paid";
-      order.paidAt = new Date(PaymentDate);
+      order.paidAt = TradeDate ? new Date(TradeDate) : new Date();
     } else {
       order.status = "failed";
     }
