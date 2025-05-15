@@ -4,6 +4,13 @@ import { AppDataSource } from "../config/db";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 
+/**
+ * API #32 POST - /api/v1/instructor/courses
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-courses-1d06a246851880dbb93ec6fa0f903175?pvs=4)
+ *
+ * 此 API 講師可以創建課程
+ */
 export async function createCourse(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const result = createCourseSchema.safeParse(req.body);
@@ -43,6 +50,13 @@ export async function createCourse(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+/**
+ * API #34 GET -/api/v1/instructor/courses/:id
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-courses-id-1d06a24685188062a63cdb2f97aa9d1a?pvs=4)
+ *
+ * 此 API 讓講師可以查看單一課程詳細資訊
+ */
 export async function getCourseDetailByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user?.id;
@@ -79,6 +93,13 @@ export async function getCourseDetailByInstructor(req: AuthRequest, res: Respons
   }
 }
 
+/**
+ * API #35 PUT - /api/v1/instructor/courses/:id
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-instructor-courses-id-1d06a2468518803f91d3fea0da7273c0?pvs=4)
+ *
+ * 此 API 讓講師可以編輯課程
+ */
 export async function updateCourseByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const result = updateCourseSchema.safeParse(req.body);
