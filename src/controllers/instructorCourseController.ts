@@ -42,3 +42,39 @@ export async function createCourse(req: AuthRequest, res: Response, next: NextFu
     next(err);
   }
 }
+
+export async function getCourseDetailByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.id;
+    const courseId = req.params.id;
+
+    const courseRepo = AppDataSource.getRepository(Course);
+    const course = await courseRepo.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到指定課程",
+      });
+      return;
+    }
+
+    if (course.instructorId !== userId) {
+      res.status(403).json({
+        status: "failed",
+        message: "權限不足",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "課程資訊取得成功",
+      data: course,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
