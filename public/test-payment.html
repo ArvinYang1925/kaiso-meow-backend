@@ -89,8 +89,8 @@
         // 修改登入函數，返回 Promise
         async function login() {
             try {
-                const email = "123@mail.com";
-                const password = "12345678Aa";
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
                 
                 console.log('開始登入...');
                 
@@ -241,29 +241,22 @@
             }
         }
 
-        // 初始化函數
-        async function initialize() {
+            // 初始化函數
+            async function initialize() {
             console.log('頁面初始化開始...');
             
-            // 1. 先執行登入
-            const loginSuccess = await login();
-            console.log('登入狀態:', loginSuccess);
+            // 檢查 URL 參數
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('orderId');
+            console.log('從 URL 獲取的訂單 ID:', orderId);
 
-            if (loginSuccess) {
-                // 2. 檢查 URL 參數
-                const urlParams = new URLSearchParams(window.location.search);
-                const orderId = urlParams.get('orderId');
-                console.log('從 URL 獲取的訂單 ID:', orderId);
-
-                if (orderId) {
-                    currentOrderId = orderId;
-                    console.log('準備獲取訂單詳情...');
-                    await showOrderDetails(orderId);
-                    document.querySelectorAll('.step').forEach(step => step.classList.add('active'));
-                }
+            if (orderId && TOKEN) {
+                currentOrderId = orderId;
+                console.log('準備獲取訂單詳情...');
+                await showOrderDetails(orderId);
+                document.querySelectorAll('.step').forEach(step => step.classList.add('active'));
             }
         }
-
         // 頁面載入時執行初始化
         window.onload = initialize;
     </script>
