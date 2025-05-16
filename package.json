@@ -7,11 +7,13 @@
     "dev": "ts-node-dev src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write \"src/**/*.{js,ts}\"",
     "format:check": "prettier --check \"src/**/*.{js,ts}\"",
     "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern='.*\\.unit\\.test\\.ts'",
+    "test:api": "jest --testPathPattern='.*\\.api\\.test\\.ts'"
   },
   "keywords": [],
   "author": "",
