@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { options } from "../config/ecpay";
-import ecpay_payment from "ecpay_aio_nodejs";
+import EcpayPayment from "ecpay_aio_nodejs";
 import { EcpayCallbackBody } from "ecpay_aio_nodejs";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
@@ -23,8 +23,10 @@ const ORDER_STATUS_MAP = {
 const MERCHANTID = process.env.ECPAY_MERCHANT_ID!;
 const BACKEND_URL = process.env.BACKEND_URL!;
 const FRONTEND_URL = process.env.FRONTEND_URL!;
+
 /**
  * API #10 GET /api/v1/orders
+ * （學生）查看購買紀錄
  */
 export async function getOrders(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -79,8 +81,10 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
     next(error);
   }
 }
+
 /**
  * API #13 POST /api/v1/orders/preview
+ * （學生）課程訂單預覽
  */
 export async function previewOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -175,8 +179,10 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 }
+
 /**
  * API #14 POST /api/v1/orders
+ * （學生）建立課程訂單
  */
 export async function createOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -335,8 +341,10 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
     next(error);
   }
 }
+
 /**
  * API #15 GET /api/v1/orders/:orderId
+ * （學生）顯示訂單資訊
  */
 export async function getOrderDetail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -407,8 +415,10 @@ export async function getOrderDetail(req: AuthRequest, res: Response, next: Next
     next(error);
   }
 }
+
 /**
  * API #16 POST /api/v1/orders/preview/apply-coupon
+ * （學生）驗證折扣碼
  */
 export async function applyCoupon(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -468,8 +478,10 @@ export async function applyCoupon(req: AuthRequest, res: Response, next: NextFun
     next(error);
   }
 }
+
 /**
  * API #17 POST /api/v1/orders/:orderId/checkout
+ * （學生）結帳（跳轉至綠界）
  */
 export async function checkoutOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -529,7 +541,7 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
     };
 
     // 6. 建立綠界付款頁面
-    const create = new ecpay_payment(options);
+    const create = new EcpayPayment(options);
     const html = create.payment_client.aio_check_out_all(base_param);
 
     // 7. 回傳 HTML
@@ -538,9 +550,10 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
     next(error);
   }
 }
+
 /**
  * API #18 POST /api/v1/orders/:orderId/payment-callback
- * 綠界付款回調處理
+ * 綠界付款完成 callback
  */
 export async function PaymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -558,7 +571,7 @@ export async function PaymentCallback(req: Request, res: Response, next: NextFun
     const data = { ...body };
     delete data.CheckMacValue;
 
-    const create = new ecpay_payment(options);
+    const create = new EcpayPayment(options);
     const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
 
     console.log("驗證資訊:", {

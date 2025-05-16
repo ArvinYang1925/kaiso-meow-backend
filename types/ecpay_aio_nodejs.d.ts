@@ -22,7 +22,7 @@ declare module "ecpay_aio_nodejs" {
     IgnorePayment: string[];
     IsProjectContractor: boolean;
   }
-  // 綠界回調請求體
+  // 綠界callback body
   export interface EcpayCallbackBody {
     RtnCode?: string;
     MerchantTradeNo?: string;
@@ -36,8 +36,9 @@ declare module "ecpay_aio_nodejs" {
     [key: string]: string | undefined;
   }
 
-  export default class ecpay_payment {
+  export default class EcpayPayment {
     constructor(options: EcpayOptions);
+
     payment_client: {
       aio_check_out_all: (params: EcpayPaymentParams) => string;
       helper: {
