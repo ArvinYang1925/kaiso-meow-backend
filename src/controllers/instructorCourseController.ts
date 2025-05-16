@@ -3,6 +3,7 @@ import { createCourseSchema, updateCourseSchema } from "../validator/courseVaild
 import { AppDataSource } from "../config/db";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
+import { uuidSchema } from "../validator/commonValidationSchemas";
 
 /**
  * API #32 POST - /api/v1/instructor/courses
@@ -23,8 +24,15 @@ export async function createCourse(req: AuthRequest, res: Response, next: NextFu
     const userId = req.user?.id;
 
     const { title, subtitle, description, highlight, duration, price, isFree, coverUrl } = result.data;
-
     const courseRepo = AppDataSource.getRepository(Course);
+    const existingCourse = await courseRepo.findOne({ where: { title } });
+    if (existingCourse) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程標題已存在，請使用其他名稱",
+      });
+      return;
+    }
     const course = courseRepo.create({
       title,
       subtitle,
@@ -61,6 +69,12 @@ export async function getCourseDetailByInstructor(req: AuthRequest, res: Respons
   try {
     const userId = req.user?.id;
     const courseId = req.params.id;
+    const parsed = uuidSchema.safeParse(courseId);
+
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "無效的課程ID格式" });
+      return;
+    }
 
     const courseRepo = AppDataSource.getRepository(Course);
     const course = await courseRepo.findOne({
@@ -111,7 +125,12 @@ export async function updateCourseByInstructor(req: AuthRequest, res: Response, 
 
     const userId = req.user?.id;
     const courseId = req.params.id;
+    const parsed = uuidSchema.safeParse(courseId);
 
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "無效的課程ID格式" });
+      return;
+    }
     const courseRepo = AppDataSource.getRepository(Course);
     const course = await courseRepo.findOne({ where: { id: courseId } });
 
@@ -126,6 +145,15 @@ export async function updateCourseByInstructor(req: AuthRequest, res: Response, 
     }
 
     const { title, subtitle, description, highlight, duration, price, isFree, coverUrl } = result.data;
+    const existingCourse = await courseRepo.findOne({ where: { title } });
+
+    if (existingCourse && existingCourse.id !== course.id) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程標題已存在，請使用其他名稱",
+      });
+      return;
+    }
 
     course.title = title;
     course.subtitle = subtitle;
