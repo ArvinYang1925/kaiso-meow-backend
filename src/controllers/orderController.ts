@@ -40,7 +40,7 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
       res.status(400).json({ status: "failed", message: err.message });
       return;
     }
-    console.log("user:", req.user);
+
     // 3. 查詢訂單
     const [orders, total] = await AppDataSource.getRepository(Order)
       .createQueryBuilder("order")
@@ -86,6 +86,7 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
   try {
     const { courseId } = req.body;
 
+    // 1. 檢查必要參數
     if (!courseId) {
       res.status(400).json({
         status: "failed",
@@ -99,7 +100,7 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
       res.status(400).json({ status: "failed", message: `courseId ${err.message}` });
       return;
     }
-    // 1. 取得課程資訊
+    // 2. 取得課程資訊
     const course = await AppDataSource.getRepository(Course)
       .createQueryBuilder("course")
       .where("course.id = :courseId", { courseId })
@@ -114,14 +115,14 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
       });
       return;
     }
-    // 2. 取得完整的用戶資訊
+    // 3. 取得完整的用戶資訊
     const user = (await AppDataSource.getRepository(User)
       .createQueryBuilder("user")
       .leftJoinAndSelect("user.student", "student")
       .where("user.id = :id", { id: req.user!.id })
       .getOne())!;
 
-    // 3 .檢查是否已購買過此課程
+    // 4. 檢查是否已購買過此課程
     const existingOrder = await AppDataSource.getRepository(Order)
       .createQueryBuilder("order")
       .where("order.user_id = :userId", { userId: user.id })
@@ -147,11 +148,11 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
       }
     }
 
-    // 3. 計算價格
+    // 5. 預覽顯示原價
     const originalPrice = course.price;
     const orderPrice = course.price;
 
-    // 4. 回傳預覽資訊
+    // 6. 回傳預覽資訊
     res.json({
       status: "success",
       data: {
@@ -160,7 +161,7 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
         status: "pending",
         course: {
           title: course.title,
-          cover_url: course.coverUrl,
+          coverUrl: course.coverUrl,
         },
         user: {
           id: user.id,
@@ -277,7 +278,7 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
         .andWhere("coupon.starts_at <= CURRENT_TIMESTAMP")
         .andWhere("coupon.expires_at >= CURRENT_TIMESTAMP")
         .getOne();
-      console.log(coupon);
+
       if (coupon) {
         originalPrice = course.price;
         if (coupon.type === "fixed") {
@@ -289,13 +290,17 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
     }
 
     // 6. 建立訂單
+    const status = orderPrice === 0 ? "paid" : "pending"; // 如果價格為 0，直接設為已付款
+    const paidAt = orderPrice === 0 ? new Date() : undefined; // 如果價格為 0，設定付款時間
+
     const order = AppDataSource.getRepository(Order).create({
       userId: user.id,
       courseId: course.id,
       originalPrice: originalPrice,
       orderPrice,
-      status: "pending",
+      status,
       couponId: coupon?.id,
+      paidAt: paidAt,
     });
 
     await AppDataSource.getRepository(Order).save(order);
@@ -307,7 +312,7 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
         id: order.id,
         originalPrice,
         orderPrice,
-        status: "pending",
+        status: status,
         createdAt: order.createdAt,
         coupon: coupon
           ? {
@@ -423,9 +428,6 @@ export async function applyCoupon(req: AuthRequest, res: Response, next: NextFun
       .createQueryBuilder("coupon")
       .where("coupon.code = :code", { code: couponCode })
       .getOne();
-    console.log("輸入的折扣碼:", couponCode);
-    console.log("查詢參數:", { code: couponCode });
-    console.log("查詢結果:", coupon);
 
     // 3. 驗證優惠券狀態
     const validationResult = validateCouponStatus(coupon);
@@ -529,7 +531,7 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
     // 6. 建立綠界付款頁面
     const create = new ecpay_payment(options);
     const html = create.payment_client.aio_check_out_all(base_param);
-    //console.log("html:", html);
+
     // 7. 回傳 HTML
     res.send(html);
   } catch (error) {
