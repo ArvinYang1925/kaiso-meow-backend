@@ -26,4 +26,15 @@ export const createCouponSchema = z
   .refine((data) => data.startsAt <= data.expiresAt, {
     path: ["startsAt"],
     message: "開始時間不能晚於結束時間",
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "percentage") {
+      if (data.value < 1 || data.value > 99) {
+        ctx.addIssue({
+          path: ["value"],
+          code: z.ZodIssueCode.custom,
+          message: "percentage 類型的折扣值必須介於 1% 到 99% 之間",
+        });
+      }
+    }
   });
