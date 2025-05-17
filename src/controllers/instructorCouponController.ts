@@ -32,6 +32,7 @@ export async function createCoupon(req: AuthRequest, res: Response, next: NextFu
       where: {
         code: parsed.data.code,
         instructorId: userId,
+        deletedAt: IsNull(),
       },
     });
 
