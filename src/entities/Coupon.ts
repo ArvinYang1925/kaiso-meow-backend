@@ -19,7 +19,7 @@ export class Coupon {
   @Column({ type: "varchar", length: 50, unique: true, nullable: false, name: "coupon_name" })
   couponName!: string;
 
-  @Column({ type: "varchar", length: 50, unique: true, nullable: false, name: "code" })
+  @Column({ type: "varchar", length: 50, nullable: false, name: "code" })
   code!: string;
 
   @Column({ type: "varchar", length: 10, nullable: false, name: "type" })
