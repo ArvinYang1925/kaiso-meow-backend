@@ -1,4 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+
+import { User } from "./User";
 
 @Entity({ name: "coupons" })
 export class Coupon {
@@ -31,4 +42,11 @@ export class Coupon {
 
   @DeleteDateColumn({ name: "deleted_at" })
   deletedAt?: Date;
+
+  @Column({ name: "instructor_id", type: "uuid", nullable: false })
+  instructorId!: string;
+
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "instructor_id" })
+  instructor!: User;
 }
