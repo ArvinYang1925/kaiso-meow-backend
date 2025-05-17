@@ -5,7 +5,6 @@ import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
 import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 import { paginationSchema } from "../validator/commonValidationSchemas";
-import { getInstructorIdByUserId } from "../utils/instructorUtils";
 
 /**
  * API #26 GET /api/v1/instructor/me
@@ -104,21 +103,12 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
 
     const { page, pageSize } = result.data;
 
-    const instructorId = await getInstructorIdByUserId(userId);
-    if (!instructorId) {
-      res.status(403).json({
-        status: "failed",
-        message: "查無講師資料",
-      });
-      return;
-    }
-
     // 查詢學生清單
     const [students, total] = await AppDataSource.getRepository(User)
       .createQueryBuilder("user")
       .innerJoin("user.orders", "order")
       .innerJoin("order.course", "course")
-      .where("course.instructorId = :instructorId", { instructorId: instructorId })
+      .where("course.instructorId = :instructorId", { instructorId: userId })
       .andWhere("user.role = :role", { role: "student" })
       .andWhere("order.paidAt IS NOT NULL")
       .skip((page - 1) * pageSize)
