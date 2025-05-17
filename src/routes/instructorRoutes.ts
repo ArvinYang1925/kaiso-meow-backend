@@ -3,7 +3,7 @@ import { getMe, updateMe } from "../controllers/instructorController";
 import { isInstructor } from "../middleware/isInstructor";
 import { isAuth } from "../middleware/isAuth";
 import { createCourse, getCourseDetailByInstructor, updateCourseByInstructor } from "../controllers/instructorCourseController";
-import { createCoupon, getCouponsByInstructor } from "../controllers/instructorCouponController";
+import { createCoupon, getCouponsByInstructor, deleteCoupon } from "../controllers/instructorCouponController";
 
 const router = Router();
 
@@ -14,5 +14,6 @@ router.put("/courses/:id", isAuth, isInstructor, updateCourseByInstructor);
 router.get("/courses/:id", isAuth, isInstructor, getCourseDetailByInstructor);
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
+router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
 
 export default router;
