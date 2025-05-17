@@ -1,0 +1,33 @@
+name: 🤖 Gemini PR Summary (API Key)
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  generate-summary:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Get PR Diff
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} > /tmp/pr.diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate PR summary with Gemini
+        run: node scripts/generate-pr-summary.js
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Leave PR comment
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file pr_summary.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
