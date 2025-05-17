@@ -48,3 +48,10 @@ export function generateResetToken(payload: ResetTokenPayload, expiresIn: jwt.Si
 export function verifyResetToken(token: string): ResetTokenPayload {
   return jwt.verify(token, SECRET) as ResetTokenPayload;
 }
+
+/**
+ * 產生測試用 token
+ */
+export function createTestToken(payload: JWTPayload) {
+  return generateToken(payload);
+}
