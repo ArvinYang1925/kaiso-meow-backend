@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
-import { options } from "../config/ecpay";
+import { paymentConfig } from "../config/payment"; // 新的配置檔案
 import EcpayPayment from "ecpay_aio_nodejs";
 import { EcpayCallbackBody } from "ecpay_aio_nodejs";
 import { Course } from "../entities/Course";
@@ -18,11 +18,6 @@ const ORDER_STATUS_MAP = {
   paid: "購買課程",
   failed: "付款失敗",
 } as const;
-
-// 在檔案開頭加入環境變數
-const MERCHANTID = process.env.ECPAY_MERCHANT_ID!;
-const BACKEND_URL = process.env.BACKEND_URL!;
-const FRONTEND_URL = process.env.FRONTEND_URL!;
 
 /**
  * API #10 GET /api/v1/orders
@@ -528,20 +523,20 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
 
     // 5. 準備交易資料
     const base_param = {
-      MerchantID: MERCHANTID,
+      MerchantID: paymentConfig.options.MercProfile.MerchantID,
       MerchantTradeNo: MerchantTradeNo,
       MerchantTradeDate: MerchantTradeDate,
       PaymentType: "aio",
       TotalAmount: Math.round(order.orderPrice).toString(),
       TradeDesc: "課程購買",
       ItemName: order.course.title,
-      ReturnURL: `${BACKEND_URL}/api/v1/orders/${orderId}/payment-callback`,
-      ClientBackURL: `${FRONTEND_URL}/test-payment.html?orderId=${orderId}`,
+      ReturnURL: `${paymentConfig.BACKEND_URL}/api/v1/orders/${orderId}/payment-callback`,
+      ClientBackURL: `${paymentConfig.FRONTEND_URL}/test-payment.html?orderId=${orderId}`,
       ChoosePayment: "ALL",
     };
 
     // 6. 建立綠界付款頁面
-    const create = new EcpayPayment(options);
+    const create = new EcpayPayment(paymentConfig.options);
     const html = create.payment_client.aio_check_out_all(base_param);
 
     // 7. 回傳 HTML
@@ -555,7 +550,7 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
  * API #18 POST /api/v1/orders/:orderId/payment-callback
  * 綠界付款完成 callback
  */
-export async function PaymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function paymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.body) {
       console.error("No request body received");
@@ -571,7 +566,7 @@ export async function PaymentCallback(req: Request, res: Response, next: NextFun
     const data = { ...body };
     delete data.CheckMacValue;
 
-    const create = new EcpayPayment(options);
+    const create = new EcpayPayment(paymentConfig.options);
     const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
 
     console.log("驗證資訊:", {
