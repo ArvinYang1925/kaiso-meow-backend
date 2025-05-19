@@ -6,6 +6,7 @@ import { User } from "../entities/User";
 import { Order } from "../entities/Order";
 import { Coupon } from "../entities/Coupon";
 import { formatDate } from "../utils/dateUtils";
+import { validateCouponStatus } from "../utils/couponUtils";
 import { paginationSchema, uuidSchema } from "../validator/commonValidationSchemas";
 
 // 訂單狀態對應的中文說明
@@ -71,6 +72,7 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
     next(error);
   }
 }
+
 /**
  * API #13 POST /api/v1/orders/preview
  */
@@ -166,6 +168,7 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 }
+
 /**
  * API #14 POST /api/v1/orders
  */
@@ -315,6 +318,143 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
           name: user.name,
           phoneNumber: user.student?.phoneNumber || "",
           email: user.email,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #15 GET /api/v1/orders/:orderId
+ * （學生）顯示訂單資訊
+ */
+export async function getOrderDetail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderId } = req.params;
+
+    // 1. 驗證 orderId 格式
+    const parsed = uuidSchema.safeParse(orderId);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: `orderId ${err.message}` });
+      return;
+    }
+
+    // 2. 查詢訂單詳情，加入 user 和 student 關聯
+    const order = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.course", "course")
+      .leftJoinAndSelect("order.coupon", "coupon")
+      .leftJoinAndSelect("order.user", "user")
+      .leftJoinAndSelect("user.student", "student")
+      .where("order.id = :orderId", { orderId })
+      .andWhere("order.userId = :userId", { userId: req.user!.id })
+      .getOne();
+
+    if (!order) {
+      res.status(400).json({
+        status: "failed",
+        message: "無此訂單",
+      });
+      return;
+    }
+
+    // 3. 格式化回傳資料
+    const orderDetail = {
+      id: order.id,
+      originalPrice: order.originalPrice,
+      orderPrice: order.orderPrice,
+      status: ORDER_STATUS_MAP[order.status as keyof typeof ORDER_STATUS_MAP] || order.status,
+      createdAt: formatDate(order.createdAt),
+      updatedAt: formatDate(order.updatedAt),
+      paidAt: order.paidAt ? formatDate(order.paidAt) : null,
+      course: {
+        title: order.course.title,
+        coverUrl: order.course.coverUrl,
+      },
+      coupon: order.coupon
+        ? {
+            couponValue: order.coupon.value,
+            couponCode: order.coupon.code,
+            couponType: order.coupon.type,
+            couponName: order.coupon.couponName,
+          }
+        : null,
+      user: {
+        id: order.user.id,
+        name: order.user.name,
+        phoneNumber: order.user.student?.phoneNumber || "",
+        email: order.user.email,
+      },
+    };
+
+    // 4. 回傳結果
+    res.json({
+      status: "success",
+      data: orderDetail,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #16 POST /api/v1/orders/preview/apply-coupon
+ * （學生）驗證折扣碼
+ */
+export async function applyCoupon(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { couponCode, originalPrice } = req.body;
+
+    // 1. 檢查必要參數
+    if (!couponCode) {
+      res.status(400).json({
+        status: "failed",
+        message: "請輸入折扣碼",
+      });
+      return;
+    }
+
+    // 2. 查詢優惠券
+    const coupon = await AppDataSource.getRepository(Coupon)
+      .createQueryBuilder("coupon")
+      .where("coupon.code = :code", { code: couponCode })
+      .getOne();
+
+    // 3. 驗證優惠券狀態
+    const validationResult = validateCouponStatus(coupon);
+    if (!validationResult.isValid) {
+      res.status(400).json({
+        status: "failed",
+        message: validationResult.message,
+      });
+      return;
+    }
+
+    // 4. 計算折扣後價格
+    let discountedPrice = originalPrice;
+    if (coupon && coupon.type === "fixed") {
+      discountedPrice = Math.max(0, originalPrice - coupon.value);
+    } else if (coupon && coupon.type === "percentage") {
+      discountedPrice = Math.round(originalPrice * (1 - coupon.value / 100));
+    }
+
+    // 5. 回傳結果
+    res.json({
+      status: "success",
+      data: {
+        coupon: {
+          id: coupon!.id,
+          value: coupon!.value,
+          code: coupon!.code,
+          type: coupon!.type,
+          couponName: coupon!.couponName,
+        },
+        order: {
+          orderPrice: discountedPrice,
+          originalPrice,
         },
       },
     });
