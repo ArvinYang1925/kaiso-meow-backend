@@ -10,6 +10,13 @@ import { updateInstructorProfileSchema } from "../validator/authValidationSchema
  */
 export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    if (!req.user?.id || req.user.role !== "instructor") {
+      res.status(400).json({
+        status: "fail",
+        message: "無效的身分資訊，請重新登入",
+      });
+      return;
+    }
     const instructorRepo = AppDataSource.getRepository(Instructor);
     const instructor = await instructorRepo.findOne({
       where: { userId: req.user?.id },
@@ -17,7 +24,7 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
     });
 
     if (!instructor) {
-      res.status(404).json({
+      res.status(400).json({
         status: "failed",
         message: "找不到講師資料",
       });
