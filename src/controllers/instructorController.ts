@@ -108,6 +108,7 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       .createQueryBuilder("user")
       .innerJoin("user.orders", "order")
       .innerJoin("order.course", "course")
+      .leftJoinAndSelect("user.student", "student") // 抓 phoneNumber
       .where("course.instructorId = :instructorId", { instructorId: userId })
       .andWhere("user.role = :role", { role: "student" })
       .andWhere("order.paidAt IS NOT NULL")
@@ -116,11 +117,12 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       .orderBy("user.createdAt", "DESC")
       .getManyAndCount();
 
+    // 組裝資料
     const formatted = students.map((s) => ({
       id: s.id,
       name: s.name,
       email: s.email,
-      phoneNumber: s.profileUrl || "",
+      phoneNumber: s.student?.phoneNumber || "",
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
     }));
