@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { getMe, updateMe } from "../controllers/instructorController";
+import { getMe, updateMe, getStudentsByInstructor } from "../controllers/instructorController";
 import { getInstructorOrders } from "../controllers/instructorOrdersController";
-
 import { isInstructor } from "../middleware/isInstructor";
 import { isAuth } from "../middleware/isAuth";
 import { createCoupon, getCouponsByInstructor, deleteCoupon } from "../controllers/instructorCouponController";
@@ -17,6 +16,8 @@ const router = Router();
 
 router.get("/me", isAuth, isInstructor, getMe);
 router.put("/me", isAuth, isInstructor, updateMe);
+
+router.get("/students", isAuth, isInstructor, getStudentsByInstructor);
 
 router.get("/orders", isAuth, isInstructor, getInstructorOrders);
 

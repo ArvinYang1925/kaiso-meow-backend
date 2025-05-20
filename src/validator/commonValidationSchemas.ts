@@ -4,6 +4,7 @@ import { z } from "zod";
 export const uuidSchema = z.string().uuid({
   message: "無效的 UUID 格式",
 });
+
 // 分頁參數驗證 schema
 export const paginationSchema = z.object({
   page: z

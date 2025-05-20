@@ -1,5 +1,8 @@
-import { Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
+import { paymentConfig } from "../config/payment";
+import EcpayPayment from "ecpay_aio_nodejs";
+import { EcpayCallbackBody } from "ecpay_aio_nodejs";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
@@ -458,6 +461,155 @@ export async function applyCoupon(req: AuthRequest, res: Response, next: NextFun
         },
       },
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #17 POST /api/v1/orders/:orderId/checkout
+ * （學生）結帳（跳轉至綠界）
+ */
+export async function checkoutOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderId } = req.params;
+
+    // 1. 驗證 orderId 格式
+    const parsed = uuidSchema.safeParse(orderId);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: `orderId ${err.message}` });
+      return;
+    }
+
+    // 2. 查詢訂單資訊
+    const order = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .leftJoinAndSelect("order.course", "course")
+      .where("order.id = :orderId", { orderId })
+      .andWhere("order.userId = :userId", { userId: req.user!.id })
+      .getOne();
+
+    if (!order) {
+      res.status(400).json({
+        status: "failed",
+        message: "無此訂單",
+      });
+      return;
+    }
+
+    // 3. 金額驗證
+    if (order.orderPrice <= 0) {
+      res.status(400).json({
+        status: "failed",
+        message: "訂單金額必須大於零",
+      });
+      return;
+    }
+
+    // 4. 產生訂單編號
+    const orderPrefix = orderId.substring(0, 7);
+    const MerchantTradeNo = `${orderPrefix}${new Date().getTime()}`;
+
+    // 5. 產生交易時間
+    const MerchantTradeDate = new Date().toLocaleDateString("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+
+    // 6. 準備交易資料
+    const base_param = {
+      MerchantID: paymentConfig.options.MercProfile.MerchantID,
+      MerchantTradeNo: MerchantTradeNo,
+      MerchantTradeDate: MerchantTradeDate,
+      PaymentType: "aio",
+      TotalAmount: Math.round(order.orderPrice).toString(),
+      TradeDesc: "課程購買",
+      ItemName: order.course.title,
+      ReturnURL: `${paymentConfig.BACKEND_URL}/api/v1/orders/${orderId}/payment-callback`, // 後端回傳網址
+      ClientBackURL: `${paymentConfig.FRONTEND_URL}/orders/${orderId}`, //   根據前端回傳網址
+      ChoosePayment: "ALL",
+    };
+
+    // 7. 建立綠界付款頁面
+    const create = new EcpayPayment(paymentConfig.options);
+    const html = create.payment_client.aio_check_out_all(base_param);
+
+    // 8. 回傳 HTML
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #18 POST /api/v1/orders/:orderId/payment-callback
+ * 綠界付款完成 callback
+ */
+export async function paymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.body) {
+      res.status(400).json({
+        status: "failed",
+        message: "未收到回傳資料",
+      });
+      return;
+    }
+
+    const body = req.body as EcpayCallbackBody;
+    const { orderId } = req.params;
+    const { RtnCode, TradeDate, CheckMacValue } = body;
+
+    // 1. 先查詢訂單
+    const order = await AppDataSource.getRepository(Order).createQueryBuilder("order").where("order.id = :orderId", { orderId }).getOne();
+
+    if (!order) {
+      res.status(400).json({
+        status: "failed",
+        message: "查無此訂單",
+      });
+      return;
+    }
+
+    //2 .驗證 CheckMacValue
+    const data = { ...body };
+    delete data.CheckMacValue;
+
+    const create = new EcpayPayment(paymentConfig.options);
+    const checkValue = create.payment_client.helper.gen_chk_mac_value(data);
+
+    if (CheckMacValue !== checkValue) {
+      order.status = "failed";
+      await AppDataSource.getRepository(Order).save(order);
+
+      res.status(400).json({
+        status: "failed",
+        message: "CheckMacValue 驗證失敗",
+      });
+      return;
+    }
+
+    // 3. 更新訂單狀態
+    // RtnCode = 1 為付款成功
+    if (RtnCode === "1") {
+      order.status = "paid";
+      const paidTime = TradeDate ? new Date(TradeDate) : new Date();
+      // 調整成 UTC 時間 與其他欄位時間格式統一
+      order.paidAt = new Date(paidTime.setHours(paidTime.getHours() - 8));
+    } else {
+      order.status = "failed";
+    }
+
+    // 4. 儲存更新
+    await AppDataSource.getRepository(Order).save(order);
+
+    // 5. 回應綠界
+    res.send("1|OK");
   } catch (error) {
     next(error);
   }
