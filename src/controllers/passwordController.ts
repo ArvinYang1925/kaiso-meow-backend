@@ -110,6 +110,7 @@ export async function changePassword(req: AuthRequest, res: Response, next: Next
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
       res.status(400).json({ status: "failed", message: "舊密碼有誤，請重新輸入" });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
