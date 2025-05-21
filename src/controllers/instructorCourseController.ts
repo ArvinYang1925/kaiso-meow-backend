@@ -261,6 +261,11 @@ export async function toggleCoursePublishStatus(req: AuthRequest, res: Response,
   try {
     const { id: courseId } = req.params;
     const instructorId = req.user?.id;
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "無效的課程ID格式" });
+      return;
+    }
 
     const parseResult = publishCourseSchema.safeParse(req.body);
     if (!parseResult.success) {
