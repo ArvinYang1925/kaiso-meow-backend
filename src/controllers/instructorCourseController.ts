@@ -1,9 +1,10 @@
 import { Response, NextFunction } from "express";
-import { createCourseSchema, updateCourseSchema } from "../validator/courseVaildationschema";
+import { createCourseSchema, updateCourseSchema, publishCourseSchema } from "../validator/courseVaildationschema";
 import { AppDataSource } from "../config/db";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
-import { uuidSchema } from "../validator/commonValidationSchemas";
+import { uuidSchema, paginationSchema } from "../validator/commonValidationSchemas";
+import { IsNull } from "typeorm";
 
 /**
  * API #32 POST - /api/v1/instructor/courses
@@ -170,6 +171,147 @@ export async function updateCourseByInstructor(req: AuthRequest, res: Response, 
       status: "success",
       message: "課程更新成功",
       data: course,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #31 GET -/api/v1/instructor/courses?page=1&pageSize=10
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-courses-page-1-pageSize-10-1d06a2468518803faf6cfba7982c7469?pvs=4)
+ *
+ * 此 API 講師可以瀏覽課程列表
+ */
+export async function getCoursesByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const parsed = paginationSchema.safeParse(req.query);
+
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    const { page, pageSize } = parsed.data;
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ status: "failed", message: "請先登入" });
+      return;
+    }
+
+    const courseRepo = AppDataSource.getRepository(Course);
+
+    const [courses, totalItems] = await courseRepo
+      .createQueryBuilder("course")
+      .leftJoin("course.orders", "order")
+      .where("course.instructorId = :userId", { userId })
+      .andWhere("course.deleted_at IS NULL")
+      .loadRelationCountAndMap("course.studentCount", "course.orders", "order", (qb) =>
+        qb.where("order.status = :status", { status: "paid" }),
+      )
+      .orderBy("course.created_at", "DESC")
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+
+    const courseList = courses.map((course) => {
+      const { id, title, coverUrl, isFree, price, isPublished, created_at } = course;
+
+      const studentCount = (course as unknown as { studentCount?: number }).studentCount ?? 0;
+
+      return {
+        id,
+        title,
+        coverUrl,
+        isFree,
+        price,
+        isPublished,
+        studentCount,
+        createdAt: created_at,
+      };
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        courseList,
+        pagination: {
+          currentPage: page,
+          pageSize,
+          totalPages: Math.ceil(totalItems / pageSize),
+          totalItems,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #49 PATCH - /api/v1/instructor/courses/:id/publish
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-instructor-courses-id-publish-1f86a2468518804c9813f3738fbf14a2?pvs=4)
+ *
+ * 此 API 講師可以上架/下架課程
+ */
+export async function toggleCoursePublishStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { id: courseId } = req.params;
+    const instructorId = req.user?.id;
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "無效的課程ID格式" });
+      return;
+    }
+
+    const parseResult = publishCourseSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        status: "fail",
+        message: "欄位格式錯誤：" + parseResult.error.issues[0].message,
+      });
+      return;
+    }
+
+    const { isPublished } = parseResult.data;
+    const courseRepo = AppDataSource.getRepository(Course);
+
+    const course = await courseRepo.findOne({
+      where: {
+        id: courseId,
+        instructorId,
+        deleted_at: IsNull(),
+      },
+    });
+
+    if (!course) {
+      res.status(404).json({
+        status: "fail",
+        message: "找不到指定課程，請確認 courseId 是否正確",
+      });
+      return;
+    }
+
+    if (course.isPublished === isPublished) {
+      res.status(409).json({
+        status: "fail",
+        message: `操作無效：課程目前已為 ${isPublished ? "上架" : "下架"} 狀態`,
+      });
+      return;
+    }
+
+    course.isPublished = isPublished;
+    await courseRepo.save(course);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        courseId: course.id,
+        isPublished: course.isPublished,
+      },
     });
   } catch (err) {
     next(err);
