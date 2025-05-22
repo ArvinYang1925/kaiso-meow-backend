@@ -5,6 +5,7 @@ import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema, paginationSchema } from "../validator/commonValidationSchemas";
 import { IsNull } from "typeorm";
+import { Order } from "../entities/Order";
 
 /**
  * API #32 POST - /api/v1/instructor/courses
@@ -312,6 +313,69 @@ export async function toggleCoursePublishStatus(req: AuthRequest, res: Response,
         courseId: course.id,
         isPublished: course.isPublished,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #36 DELETE - /api/v1/instructor/courses/:id
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/DELETE-api-v1-instructor-courses-id-1d06a2468518805887c9fff368d035e0?pvs=4)
+ *
+ * 此 API 讓講師可以刪除課程，但若課程已上架或已有學生購買則無法刪除
+ */
+export async function deleteCourse(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const courseId = req.params.id;
+    const userId = req.user?.id;
+    const parsed = uuidSchema.safeParse(courseId);
+
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "課程 ID 格式錯誤" });
+      return;
+    }
+
+    const courseRepo = AppDataSource.getRepository(Course);
+    const course = await courseRepo.findOne({
+      where: { id: courseId, deleted_at: IsNull() },
+    });
+
+    if (!course) {
+      res.status(404).json({ status: "failed", message: "找不到指定課程" });
+      return;
+    }
+
+    if (course.instructorId !== userId) {
+      res.status(403).json({ status: "failed", message: "權限不足" });
+      return;
+    }
+
+    if (course.isPublished) {
+      res.status(400).json({ status: "failed", message: "已上架的課程不能刪除，請先將課程下架" });
+      return;
+    }
+
+    // 檢查課程是否有學生購買
+    const orderRepo = AppDataSource.getRepository(Order);
+    const hasOrders = await orderRepo.findOne({
+      where: {
+        courseId: courseId,
+        status: "paid",
+      },
+    });
+
+    if (hasOrders) {
+      res.status(400).json({ status: "failed", message: "已有學生購買的課程不能刪除" });
+      return;
+    }
+
+    await courseRepo.softRemove(course);
+
+    res.status(200).json({
+      status: "success",
+      message: "課程已成功刪除",
     });
   } catch (err) {
     next(err);
