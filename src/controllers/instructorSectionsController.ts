@@ -7,6 +7,13 @@ import { uuidSchema } from "../validator/commonValidationSchemas";
 import { sectionSchema, updateSectionSchema, publishSectionSchema } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 
+/**
+ * API #43 GET -/api/v1/instructor/courses/:courseId/sections
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-courses-courseId-sections-1d06a24685188031bb7cdd6ea6c6113f?pvs=4)
+ *
+ * 此 API 用於講師可以查詢某課程的所有章節列表
+ */
 export async function getCourseSectionsByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   const courseId = req.params.id;
 
@@ -58,6 +65,13 @@ export async function getCourseSectionsByInstructor(req: AuthRequest, res: Respo
   }
 }
 
+/**
+ * API #41 POST - /api/v1/instructor/courses/:courseId/sections
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-courses-courseId-sections-1d06a246851880e9b135cf4e521dfeec?pvs=4)
+ *
+ * 此 API 用於講師可以新增章節
+ */
 export async function createSectionByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   const courseId = req.params.id;
   const instructorId = req.user?.id;
@@ -128,6 +142,13 @@ export async function createSectionByInstructor(req: AuthRequest, res: Response,
   }
 }
 
+/**
+ * API #39 PATCH /api/v1/instructor/sections/:sectionId
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-instructor-sections-sectionId-1d06a246851880978816daf98305629b?pvs=4)
+ *
+ * 此 API 用於講師可以編輯章節內容(標題、內容）
+ */
 export async function updateSection(req: AuthRequest, res: Response, next: NextFunction) {
   const { id: sectionId } = req.params;
   const instructorId = req.user?.id;
@@ -187,6 +208,13 @@ export async function updateSection(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+/**
+ * API #39 DELETE - /api/v1/instructor/sections/:sectionId
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/DELETE-api-v1-instructor-sections-sectionId-1d06a24685188029a490ed291ac1c997?pvs=4)
+ *
+ * 此 API 用於講師可以刪除章節
+ */
 export async function deleteSection(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id: sectionId } = req.params;
@@ -228,6 +256,13 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+/**
+ * API #39 PATCH /api/v1/instructor/sections/:sectionId/publish
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-instructor-sections-sectionId-publish-1d06a24685188001bc2fe412de9528a2?pvs=4)
+ *
+ * 此 API 用於講師發佈/取消發佈章節
+ */
 export async function publishSection(req: AuthRequest, res: Response, next: NextFunction) {
   const { id: sectionId } = req.params;
   const instructorId = req.user?.id;
