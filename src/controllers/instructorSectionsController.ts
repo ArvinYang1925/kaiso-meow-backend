@@ -4,7 +4,7 @@ import { Section } from "../entities/Section";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
-import { sectionSchema } from "../validator/sectionVaildationsechema";
+import { sectionSchema, updateSectionSchema } from "../validator/sectionVaildationsechema";
 
 export async function getCourseSectionsByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   const courseId = req.params.id;
@@ -120,6 +120,65 @@ export async function createSectionByInstructor(req: AuthRequest, res: Response,
         title: newSection.title,
         courseId: course.id,
         createdAt: newSection.createdAt.toISOString(),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateSection(req: AuthRequest, res: Response, next: NextFunction) {
+  const { id: sectionId } = req.params;
+  const instructorId = req.user?.id;
+
+  // 驗證 sectionId 格式
+  const parsed = uuidSchema.safeParse(sectionId);
+  if (!parsed.success) {
+    res.status(400).json({ status: "failed", message: "無效的章節ID格式" });
+    return;
+  }
+
+  try {
+    const bodyParse = updateSectionSchema.safeParse(req.body);
+    if (!bodyParse.success) {
+      res.status(400).json({
+        status: "fail",
+        message: "請提供有效的標題或內容",
+      });
+      return;
+    }
+
+    const sectionRepo = AppDataSource.getRepository(Section);
+    const section = await sectionRepo.findOne({
+      where: { id: sectionId },
+      relations: ["course"],
+    });
+
+    if (!section) {
+      res.status(404).json({
+        status: "fail",
+        message: "查無指定章節",
+      });
+      return;
+    }
+
+    if (section.course.instructorId !== instructorId) {
+      res.status(403).json({
+        status: "fail",
+        message: "無權限操作此章節",
+      });
+      return;
+    }
+
+    const updated = Object.assign(section, bodyParse.data);
+    await sectionRepo.save(updated);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        id: updated.id,
+        title: updated.title,
+        content: updated.content,
       },
     });
   } catch (err) {
