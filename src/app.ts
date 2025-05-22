@@ -14,8 +14,8 @@ dotenv.config();
 
 const app = express();
 
-// CORS 白名單
-const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173"];
+// 允許 cors 白名單設定
+const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173", "https://kaiso-meow-backend-test0514.onrender.com"];
 app.use(
   cors({
     origin: (origin, callback) => {
