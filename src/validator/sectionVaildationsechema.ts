@@ -8,10 +8,14 @@ export const sectionSchema = z.object({
     .max(100, "章節標題不得超過 100 字"),
 });
 
-export const updateSectionSchema = z.object({
-  title: z.string().min(1).max(100).optional(),
-  content: z.string().optional(),
-});
+export const updateSectionSchema = z
+  .object({
+    title: z.string().min(1).max(100).optional(),
+    content: z.string().optional(),
+  })
+  .refine((data) => data.title !== undefined || data.content !== undefined, {
+    message: "請至少提供 title 或 content",
+  });
 
 export const publishSectionSchema = z.object({
   isPublished: z.boolean(),
