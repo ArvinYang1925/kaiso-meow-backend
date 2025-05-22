@@ -12,7 +12,7 @@ import {
   toggleCoursePublishStatus,
 } from "../controllers/instructorCourseController";
 
-import { getCourseSectionsByInstructor } from "../controllers/instructorSectionsController";
+import { getCourseSectionsByInstructor, createSectionByInstructor } from "../controllers/instructorSectionsController";
 
 const router = Router();
 
@@ -34,5 +34,6 @@ router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
 
 router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
+router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
 
 export default router;
