@@ -17,6 +17,7 @@ import {
   createSectionByInstructor,
   updateSection,
   deleteSection,
+  publishSection,
 } from "../controllers/instructorSectionsController";
 
 const router = Router();
@@ -43,5 +44,6 @@ router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstru
 
 router.patch("/sections/:id", isAuth, isInstructor, updateSection);
 router.delete("/sections/:id", isAuth, isInstructor, deleteSection);
+router.patch("/sections/:id/publish", isAuth, isInstructor, publishSection);
 
 export default router;

@@ -9,3 +9,7 @@ export const updateSectionSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   content: z.string().optional(),
 });
+
+export const publishSectionSchema = z.object({
+  isPublished: z.boolean(),
+});

@@ -4,7 +4,7 @@ import { Section } from "../entities/Section";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
-import { sectionSchema, updateSectionSchema } from "../validator/sectionVaildationsechema";
+import { sectionSchema, updateSectionSchema, publishSectionSchema } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 
 export async function getCourseSectionsByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
@@ -222,6 +222,65 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
     res.status(200).json({
       status: "success",
       message: "章節已成功刪除",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function publishSection(req: AuthRequest, res: Response, next: NextFunction) {
+  const { id: sectionId } = req.params;
+  const instructorId = req.user?.id;
+
+  const parsed = uuidSchema.safeParse(sectionId);
+  if (!parsed.success) {
+    res.status(400).json({ status: "fail", message: "無效的章節ID格式" });
+    return;
+  }
+
+  const bodyResult = publishSectionSchema.safeParse(req.body);
+  if (!bodyResult.success) {
+    res.status(400).json({
+      status: "fail",
+      message: "isPublished 欄位格式錯誤，必須為 true 或 false",
+    });
+    return;
+  }
+
+  try {
+    const sectionRepo = AppDataSource.getRepository(Section);
+
+    const section = await sectionRepo.findOne({
+      where: { id: sectionId },
+      relations: ["course"],
+    });
+
+    if (!section) {
+      res.status(404).json({
+        status: "fail",
+        message: "指定章節不存在",
+      });
+      return;
+    }
+
+    if (section.course.instructorId !== instructorId) {
+      res.status(403).json({
+        status: "fail",
+        message: "無權限存取",
+      });
+      return;
+    }
+
+    section.isPublished = bodyResult.data.isPublished;
+    await sectionRepo.save(section);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        id: section.id,
+        title: section.title,
+        isPublished: section.isPublished,
+      },
     });
   } catch (err) {
     next(err);
