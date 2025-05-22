@@ -38,6 +38,11 @@ export async function getCourseSectionsByInstructor(req: AuthRequest, res: Respo
     });
 
     if (!course) {
+      res.status(404).json({ status: "fail", message: "找不到課程" });
+      return;
+    }
+
+    if (course.instructorId !== instructorId) {
       res.status(403).json({ status: "fail", message: "無權限存取此課程" });
       return;
     }
