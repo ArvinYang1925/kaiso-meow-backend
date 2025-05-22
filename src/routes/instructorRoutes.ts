@@ -12,7 +12,12 @@ import {
   toggleCoursePublishStatus,
 } from "../controllers/instructorCourseController";
 
-import { getCourseSectionsByInstructor, createSectionByInstructor, updateSection } from "../controllers/instructorSectionsController";
+import {
+  getCourseSectionsByInstructor,
+  createSectionByInstructor,
+  updateSection,
+  deleteSection,
+} from "../controllers/instructorSectionsController";
 
 const router = Router();
 
@@ -37,5 +42,6 @@ router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByIns
 router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
 
 router.patch("/sections/:id", isAuth, isInstructor, updateSection);
+router.delete("/sections/:id", isAuth, isInstructor, deleteSection);
 
 export default router;

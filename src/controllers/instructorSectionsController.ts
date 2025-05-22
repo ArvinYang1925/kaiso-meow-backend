@@ -5,6 +5,7 @@ import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { sectionSchema, updateSectionSchema } from "../validator/sectionVaildationsechema";
+import { reorderSections } from "../utils/sectionUtils";
 
 export async function getCourseSectionsByInstructor(req: AuthRequest, res: Response, next: NextFunction) {
   const courseId = req.params.id;
@@ -180,6 +181,47 @@ export async function updateSection(req: AuthRequest, res: Response, next: NextF
         title: updated.title,
         content: updated.content,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteSection(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { id: sectionId } = req.params;
+    const parsed = uuidSchema.safeParse(sectionId);
+
+    if (!parsed.success) {
+      res.status(400).json({ status: "failed", message: "無效的章節ID格式" });
+      return;
+    }
+
+    const instructorId = req.user?.id;
+    const sectionRepo = AppDataSource.getRepository(Section);
+
+    const section = await sectionRepo.findOne({
+      where: { id: sectionId },
+      relations: ["course"],
+    });
+
+    if (!section) {
+      res.status(400).json({ status: "fail", message: "章節不存在" });
+      return;
+    }
+
+    if (section.course.instructorId !== instructorId) {
+      res.status(403).json({ status: "fail", message: "無權限存取." });
+      return;
+    }
+
+    const courseId = section.course.id;
+    await sectionRepo.remove(section);
+    await reorderSections(courseId);
+
+    res.status(200).json({
+      status: "success",
+      message: "章節已成功刪除",
     });
   } catch (err) {
     next(err);
