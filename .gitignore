@@ -22,3 +22,6 @@ Thumbs.db
 
 # VS Code 設定
 .vscode/
+
+# 測試覆蓋率報告
+coverage/
