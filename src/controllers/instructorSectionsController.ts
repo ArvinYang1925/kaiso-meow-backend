@@ -248,6 +248,40 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
       return;
     }
 
+    const course = section.course;
+
+    if (section.isPublished) {
+      res.status(422).json({
+        status: "fail",
+        message: "章節已發佈，無法刪除",
+      });
+      return;
+    }
+
+    if (course.isPublished) {
+      res.status(422).json({
+        status: "fail",
+        message: "課程已發佈，無法刪除章節",
+      });
+      return;
+    }
+
+    if ((course.orders?.length ?? 0) > 0) {
+      res.status(422).json({
+        status: "fail",
+        message: "已有學生購買此課程，無法刪除章節",
+      });
+      return;
+    }
+
+    if ((course.progresses?.length ?? 0) > 0) {
+      res.status(422).json({
+        status: "fail",
+        message: "已有學生觀看紀錄，無法刪除章節",
+      });
+      return;
+    }
+
     const courseId = section.course.id;
     await sectionRepo.remove(section);
     await reorderSections(courseId);

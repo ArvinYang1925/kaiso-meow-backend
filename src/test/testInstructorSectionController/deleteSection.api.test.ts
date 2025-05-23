@@ -123,4 +123,79 @@ describe("DELETE /api/v1/instructor/sections/:sectionId", () => {
 
     expect(res.status).toBe(500);
   });
+  it("❌ 章節已發佈 → 回傳 422", async () => {
+    sectionRepoMock.findOne.mockResolvedValue({
+      id: fakeSectionId,
+      isPublished: true,
+      course: {
+        id: "course-1",
+        instructorId: fakeUserId,
+        isPublished: false,
+        orders: [],
+        progresses: [],
+      },
+    });
+
+    const res = await request(app).delete(baseURL).set("Authorization", `Bearer ${fakeToken}`);
+
+    expect(res.status).toBe(422);
+    expect(res.body.message).toBe("章節已發佈，無法刪除");
+  });
+
+  it("❌ 課程已發佈 → 回傳 422", async () => {
+    sectionRepoMock.findOne.mockResolvedValue({
+      id: fakeSectionId,
+      isPublished: false,
+      course: {
+        id: "course-1",
+        instructorId: fakeUserId,
+        isPublished: true,
+        orders: [],
+        progresses: [],
+      },
+    });
+
+    const res = await request(app).delete(baseURL).set("Authorization", `Bearer ${fakeToken}`);
+
+    expect(res.status).toBe(422);
+    expect(res.body.message).toBe("課程已發佈，無法刪除章節");
+  });
+
+  it("❌ 課程已有學生訂單 → 回傳 422", async () => {
+    sectionRepoMock.findOne.mockResolvedValue({
+      id: fakeSectionId,
+      isPublished: false,
+      course: {
+        id: "course-1",
+        instructorId: fakeUserId,
+        isPublished: false,
+        orders: [{}], // 模擬有一筆訂單
+        progresses: [],
+      },
+    });
+
+    const res = await request(app).delete(baseURL).set("Authorization", `Bearer ${fakeToken}`);
+
+    expect(res.status).toBe(422);
+    expect(res.body.message).toBe("已有學生購買此課程，無法刪除章節");
+  });
+
+  it("❌ 課程已有學生觀看紀錄 → 回傳 422", async () => {
+    sectionRepoMock.findOne.mockResolvedValue({
+      id: fakeSectionId,
+      isPublished: false,
+      course: {
+        id: "course-1",
+        instructorId: fakeUserId,
+        isPublished: false,
+        orders: [],
+        progresses: [{}], // 模擬有一筆進度紀錄
+      },
+    });
+
+    const res = await request(app).delete(baseURL).set("Authorization", `Bearer ${fakeToken}`);
+
+    expect(res.status).toBe(422);
+    expect(res.body.message).toBe("已有學生觀看紀錄，無法刪除章節");
+  });
 });
