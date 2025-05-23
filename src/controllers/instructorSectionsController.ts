@@ -214,7 +214,7 @@ export async function updateSection(req: AuthRequest, res: Response, next: NextF
 }
 
 /**
- * API #39 DELETE - /api/v1/instructor/sections/:sectionId
+ * API #42 DELETE - /api/v1/instructor/sections/:sectionId
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/DELETE-api-v1-instructor-sections-sectionId-1d06a24685188029a490ed291ac1c997?pvs=4)
  *
@@ -262,7 +262,7 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
 }
 
 /**
- * API #39 PATCH /api/v1/instructor/sections/:sectionId/publish
+ * API #40 PATCH /api/v1/instructor/sections/:sectionId/publish
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-instructor-sections-sectionId-publish-1d06a24685188001bc2fe412de9528a2?pvs=4)
  *
