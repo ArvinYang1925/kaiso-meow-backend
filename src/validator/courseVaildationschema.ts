@@ -30,3 +30,9 @@ export const updateCourseSchema = z.object({
   isFree: isFreeSchema,
   coverUrl: coverUrlSchema,
 });
+
+export const publishCourseSchema = z.object({
+  isPublished: z.boolean({
+    message: "isPublished 必須為布林值",
+  }),
+});

@@ -1,21 +1,21 @@
 import "reflect-metadata";
 import express, { Request, Response, NextFunction } from "express";
-import { AppDataSource } from "./config/db";
+import cors from "cors";
+import dotenv from "dotenv";
+
 import todoRoutes from "./routes/todoRoutes";
 import authRoutes from "./routes/authRoutes";
 import instructorRoutes from "./routes/instructorRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";
 import courseRoutes from "./routes/courseRoutes";
 import orderRoutes from "./routes/orderRoutes";
-import cors from "cors";
-import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
 
 // 允許 cors 白名單設定
-const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173"];
+const whitelist = ["https://kaiso-meow-frontend.onrender.com", "http://localhost:5173", "https://kaiso-meow-backend-test0514.onrender.com"];
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -32,18 +32,20 @@ app.use(
 
 app.use(express.json());
 
-app.use("/api/todos", todoRoutes); // 加上 Todo 路由
+// 路由掛載
+app.use("/api/todos", todoRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/instructor", instructorRoutes);
 app.use("/api/v1/newsletter", newsletterRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/orders", orderRoutes);
 
+// 測試根目錄
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
 });
 
-// 設定 404 處理中間件
+// 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     status: "failed",
@@ -51,7 +53,7 @@ app.use((_req: Request, res: Response) => {
   });
 });
 
-// 設定500 錯誤處理中間件
+// 500 handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({
@@ -61,15 +63,5 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
-
-AppDataSource.initialize()
-  .then(() => {
-    console.log("📦 DB Connected!");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ DB connection failed:", err);
-  });
+// ✅ 匯出 app 給 Jest 測試用
+export default app;
