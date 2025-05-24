@@ -36,7 +36,7 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
       res.status(400).json({ status: "failed", message: err.message });
       return;
     }
-    console.log("user:", req.user);
+
     // 3. 查詢訂單
     const [orders, total] = await AppDataSource.getRepository(Order)
       .createQueryBuilder("order")
@@ -275,7 +275,7 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
         .andWhere("coupon.starts_at <= CURRENT_TIMESTAMP")
         .andWhere("coupon.expires_at >= CURRENT_TIMESTAMP")
         .getOne();
-      console.log(coupon);
+
       if (coupon) {
         originalPrice = course.price;
         if (coupon.type === "fixed") {
@@ -286,14 +286,22 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
       }
     }
 
-    // 6. 建立訂單
+    // 6. 建立訂單 (檢核是否為免費課程)
+    const isFreeCourse = orderPrice === 0;
+    let paidAtTime = undefined;
+    if (isFreeCourse) {
+      const now = new Date();
+      paidAtTime = new Date(now.setHours(now.getHours() - 8)); // 調整成 UTC 時間
+    }
+
     const order = AppDataSource.getRepository(Order).create({
       userId: user.id,
       courseId: course.id,
       originalPrice: originalPrice,
       orderPrice,
-      status: "pending",
+      status: isFreeCourse ? "paid" : "pending",
       couponId: coupon?.id,
+      paidAt: paidAtTime,
     });
 
     await AppDataSource.getRepository(Order).save(order);
@@ -305,8 +313,9 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
         id: order.id,
         originalPrice,
         orderPrice,
-        status: "pending",
+        status: isFreeCourse ? "paid" : "pending",
         createdAt: order.createdAt,
+        paidAt: isFreeCourse ? order.paidAt : null,
         coupon: coupon
           ? {
               couponCode: coupon.code,
