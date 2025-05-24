@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { Section } from "../entities/Section";
 import { Course } from "../entities/Course";
+import { StudentProgress } from "../entities/StudentProgress";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { sectionSchema, updateSectionSchema, publishSectionSchema } from "../validator/sectionVaildationsechema";
@@ -235,7 +236,7 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
 
     const section = await sectionRepo.findOne({
       where: { id: sectionId },
-      relations: ["course"],
+      relations: ["course", "course.orders", "course.progresses"],
     });
 
     if (!section) {
@@ -251,34 +252,28 @@ export async function deleteSection(req: AuthRequest, res: Response, next: NextF
     const course = section.course;
 
     if (section.isPublished) {
-      res.status(422).json({
-        status: "fail",
-        message: "章節已發佈，無法刪除",
-      });
+      res.status(422).json({ status: "fail", message: "章節已發佈，無法刪除" });
       return;
     }
 
     if (course.isPublished) {
-      res.status(422).json({
-        status: "fail",
-        message: "課程已發佈，無法刪除章節",
-      });
+      res.status(422).json({ status: "fail", message: "課程已發佈，無法刪除章節" });
       return;
     }
 
-    if ((course.orders?.length ?? 0) > 0) {
-      res.status(422).json({
-        status: "fail",
-        message: "已有學生購買此課程，無法刪除章節",
-      });
+    const hasPaidOrder = course.orders?.some((order) => order.paidAt !== null) ?? false;
+    if (hasPaidOrder) {
+      res.status(422).json({ status: "fail", message: "已有學生購買此課程，無法刪除章節" });
       return;
     }
 
-    if ((course.progresses?.length ?? 0) > 0) {
-      res.status(422).json({
-        status: "fail",
-        message: "已有學生觀看紀錄，無法刪除章節",
-      });
+    const sectionProgressRepo = AppDataSource.getRepository(StudentProgress);
+    const hasProgress = await sectionProgressRepo.findOne({
+      where: { section: { id: section.id } },
+    });
+
+    if (hasProgress) {
+      res.status(422).json({ status: "fail", message: "已有學生觀看紀錄，無法刪除章節" });
       return;
     }
 
