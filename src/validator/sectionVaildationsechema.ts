@@ -20,3 +20,9 @@ export const updateSectionSchema = z
 export const publishSectionSchema = z.object({
   isPublished: z.boolean(),
 });
+
+export const aiSectionSchema = z.object({
+  description: z.string().min(1, "課程描述必填"),
+  expectedSectionCount: z.number().int("章節數量需為整數").gt(0, "章節數量需為正整數").optional(),
+  sectionIdea: z.string().optional(),
+});
