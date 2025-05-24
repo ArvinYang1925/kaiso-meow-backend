@@ -40,7 +40,7 @@ module.exports = [
     },
   },
   {
-    files: ["**/*.test.ts", "**/__tests__/**/*.ts", "src/__mocks__/**/*.ts"],
+    files: ["**/*.test.ts", "**/__tests__/**/*.ts"],
     languageOptions: {
       globals: {
         ...globals.jest, // 加入 Jest 全域變數
