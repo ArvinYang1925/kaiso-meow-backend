@@ -13,6 +13,14 @@ import {
   deleteCourse,
 } from "../controllers/instructorCourseController";
 
+import {
+  getCourseSectionsByInstructor,
+  createSectionByInstructor,
+  updateSection,
+  deleteSection,
+  publishSection,
+} from "../controllers/instructorSectionsController";
+
 const router = Router();
 
 router.get("/me", isAuth, isInstructor, getMe);
@@ -32,5 +40,12 @@ router.delete("/courses/:id", isAuth, isInstructor, deleteCourse);
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
+
+router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
+router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
+
+router.patch("/sections/:id", isAuth, isInstructor, updateSection);
+router.delete("/sections/:id", isAuth, isInstructor, deleteSection);
+router.patch("/sections/:id/publish", isAuth, isInstructor, publishSection);
 
 export default router;
