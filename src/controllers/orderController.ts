@@ -158,6 +158,7 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
         course: {
           title: course.title,
           cover_url: course.coverUrl,
+          price: course.price,
         },
         user: {
           id: user.id,
@@ -291,7 +292,7 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
     let paidAtTime = undefined;
     if (isFreeCourse) {
       const now = new Date();
-      paidAtTime = new Date(now.setHours(now.getHours() - 8)); // 調整成 UTC 時間
+      paidAtTime = now.toLocaleString("en-US", { timeZone: "UTC" }); //new Date(now.setHours(now.getHours() - 8)); // 調整成 UTC 時間
     }
 
     const order = AppDataSource.getRepository(Order).create({
@@ -385,6 +386,7 @@ export async function getOrderDetail(req: AuthRequest, res: Response, next: Next
       course: {
         title: order.course.title,
         coverUrl: order.course.coverUrl,
+        price: order.course.price,
       },
       coupon: order.coupon
         ? {
