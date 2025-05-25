@@ -12,6 +12,7 @@ import {
   getCoursesByInstructor,
   toggleCoursePublishStatus,
   deleteCourse,
+  uploadCourseCover,
 } from "../controllers/instructorCourseController";
 
 import {
@@ -44,6 +45,14 @@ router.get("/courses/:id", isAuth, isInstructor, getCourseDetailByInstructor);
 router.put("/courses/:id", isAuth, isInstructor, updateCourseByInstructor);
 router.patch("/courses/:id/publish", isAuth, isInstructor, toggleCoursePublishStatus);
 router.delete("/courses/:id", isAuth, isInstructor, deleteCourse);
+// 課程封面上傳路由
+router.post(
+  "/uploads/cover",
+  isAuth,
+  isInstructor,
+  imageUpload.single("file"), // ★ field name = file
+  uploadCourseCover,
+);
 
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
