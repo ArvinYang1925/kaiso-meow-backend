@@ -5,6 +5,8 @@ import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
 import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 import { paginationSchema } from "../validator/commonValidationSchemas";
+import { bucket } from "../utils/firebaseUtils";
+import path from "path";
 
 /**
  * API #26 GET /api/v1/instructor/me
@@ -86,6 +88,71 @@ export async function updateMe(req: AuthRequest, res: Response, next: NextFuncti
         avatar: instructor.user.profileUrl,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #28 POST /api/v1/instructor/upload/avatar
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructors-upload-avatar-1d06a2468518807780d6fdf76e310be7?pvs=4)
+ *
+ * 此 API 讓講師可上傳大頭照
+ */
+export async function uploadAvatar(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    // 檢查是否上傳圖片
+    if (!req.file) {
+      res.status(400).json({ status: "failed", message: "請選擇要上傳的圖片檔案" });
+      return;
+    }
+
+    // 檢查講師資料
+    const instructorRepo = AppDataSource.getRepository(Instructor);
+    const instructor = await instructorRepo.findOne({
+      where: { userId: req.user?.id },
+      relations: ["user"],
+    });
+    if (!instructor) {
+      res.status(404).json({ status: "failed", message: "找不到講師資料" });
+      return;
+    }
+
+    // 上傳圖片
+    const timestamp = Date.now();
+    const ext = path.extname(req.file.originalname).toLowerCase();
+    const remotePath = `images/instructor_avatar/instructor-${instructor.id}-${timestamp}${ext}`;
+    const file = bucket.file(remotePath);
+
+    // 上傳檔案
+    const stream = file.createWriteStream({
+      metadata: { contentType: req.file.mimetype },
+    });
+
+    // 錯誤處理
+    stream.on("error", (err) => next(err));
+
+    // 上傳完成
+    stream.on("finish", async () => {
+      try {
+        await file.makePublic();
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${remotePath}`;
+
+        instructor.user.profileUrl = publicUrl;
+        await AppDataSource.getRepository(User).save(instructor.user);
+
+        res.status(200).json({
+          status: "success",
+          message: "講師大頭貼上傳成功",
+          data: { avatarUrl: publicUrl },
+        });
+      } catch (err) {
+        next(err);
+      }
+    });
+
+    stream.end(req.file.buffer);
   } catch (err) {
     next(err);
   }
