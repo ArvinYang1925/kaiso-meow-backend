@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { getMe, updateMe, getStudentsByInstructor } from "../controllers/instructorController";
+import { getMe, updateMe, getStudentsByInstructor, uploadAvatar } from "../controllers/instructorController";
 import { getInstructorOrders } from "../controllers/instructorOrdersController";
 import { isInstructor } from "../middleware/isInstructor";
 import { isAuth } from "../middleware/isAuth";
+import { imageUpload } from "../middleware/imageUpload";
 import { createCoupon, getCouponsByInstructor, deleteCoupon } from "../controllers/instructorCouponController";
 import {
   createCourse,
@@ -11,6 +12,7 @@ import {
   getCoursesByInstructor,
   toggleCoursePublishStatus,
   deleteCourse,
+  uploadCourseCover,
 } from "../controllers/instructorCourseController";
 
 import {
@@ -25,6 +27,13 @@ const router = Router();
 
 router.get("/me", isAuth, isInstructor, getMe);
 router.put("/me", isAuth, isInstructor, updateMe);
+router.post(
+  "/upload/avatar",
+  isAuth,
+  isInstructor,
+  imageUpload.single("file"), // ★ field name = file
+  uploadAvatar,
+);
 
 router.get("/students", isAuth, isInstructor, getStudentsByInstructor);
 
@@ -36,6 +45,14 @@ router.get("/courses/:id", isAuth, isInstructor, getCourseDetailByInstructor);
 router.put("/courses/:id", isAuth, isInstructor, updateCourseByInstructor);
 router.patch("/courses/:id/publish", isAuth, isInstructor, toggleCoursePublishStatus);
 router.delete("/courses/:id", isAuth, isInstructor, deleteCourse);
+// 課程封面上傳路由
+router.post(
+  "/uploads/cover",
+  isAuth,
+  isInstructor,
+  imageUpload.single("file"), // ★ field name = file
+  uploadCourseCover,
+);
 
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
