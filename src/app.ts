@@ -10,6 +10,9 @@ import newsletterRoutes from "./routes/newsletterRoutes";
 import courseRoutes from "./routes/courseRoutes";
 import orderRoutes from "./routes/orderRoutes";
 
+import { handleMulterError } from "./middleware/errorHandler";
+import type { ErrorRequestHandler } from "express";
+
 dotenv.config();
 
 const app = express();
@@ -44,6 +47,8 @@ app.use("/api/v1/orders", orderRoutes);
 app.get("/", (req, res) => {
   res.send("Hello, Kaiso Backend!");
 });
+
+app.use(handleMulterError as ErrorRequestHandler); // 處理 multer 上傳相關錯誤
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
