@@ -5,8 +5,9 @@ import { Course } from "../entities/Course";
 import { StudentProgress } from "../entities/StudentProgress";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
-import { sectionSchema, updateSectionSchema, publishSectionSchema } from "../validator/sectionVaildationsechema";
+import { sectionSchema, updateSectionSchema, publishSectionSchema, aiSectionSchema } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
+import { generateSections } from "../services/aiService";
 
 /**
  * API #43 GET -/api/v1/instructor/courses/:courseId/sections
@@ -350,6 +351,65 @@ export async function publishSection(req: AuthRequest, res: Response, next: Next
         title: section.title,
         isPublished: section.isPublished,
       },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #50 PPOST /api/v1/courses/:courseId/ai-generated-sections
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-courses-courseId-ai-generated-sections-1fc6a246851880948096f028d7fb5179?pvs=4)
+ *
+ * 此 API 用於講師使用AI來做章節草稿產生
+ */
+export async function generateCourseSections(req: AuthRequest, res: Response, next: NextFunction) {
+  const { id: courseId } = req.params;
+  const instructorId = req.user?.id;
+
+  // 驗證 courseId 格式
+  const parsedCourseId = uuidSchema.safeParse(courseId);
+  if (!parsedCourseId.success) {
+    res.status(400).json({ status: "failed", message: "無效的課程ID格式" });
+    return;
+  }
+
+  // 驗證 body 格式
+  const parsedBody = aiSectionSchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    res.status(400).json({
+      status: "fail",
+      message: parsedBody.error.errors[0]?.message || "欄位驗證錯誤",
+    });
+    return;
+  }
+  const { description, expectedSectionCount, sectionIdea } = parsedBody.data;
+
+  try {
+    const course = await AppDataSource.getRepository(Course).findOne({
+      where: {
+        id: courseId,
+        // instructorId: instructorId,
+      },
+    });
+
+    if (!course) {
+      res.status(404).json({ status: "fail", message: "找不到指定課程" });
+      return;
+    }
+    if (course.instructorId !== instructorId) {
+      res.status(403).json({ status: "fail", message: "您無權限編輯此課程" });
+      return;
+    }
+    const aiResult = await generateSections({ description, expectedSectionCount, sectionIdea });
+    if (!aiResult) {
+      res.status(422).json({ status: "fail", message: "AI 無法解析內容" });
+      return;
+    }
+    res.status(200).json({
+      status: "success",
+      data: aiResult,
     });
   } catch (err) {
     next(err);

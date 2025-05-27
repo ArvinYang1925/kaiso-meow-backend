@@ -21,6 +21,7 @@ import {
   updateSection,
   deleteSection,
   publishSection,
+  generateCourseSections,
 } from "../controllers/instructorSectionsController";
 
 const router = Router();
@@ -64,5 +65,7 @@ router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstru
 router.patch("/sections/:id", isAuth, isInstructor, updateSection);
 router.delete("/sections/:id", isAuth, isInstructor, deleteSection);
 router.patch("/sections/:id/publish", isAuth, isInstructor, publishSection);
+
+router.post("/courses/:id/ai-generated-sections", isAuth, isInstructor, generateCourseSections);
 
 export default router;
