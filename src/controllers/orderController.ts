@@ -15,7 +15,7 @@ import { paginationSchema, uuidSchema } from "../validator/commonValidationSchem
 // 訂單狀態對應的中文說明
 const ORDER_STATUS_MAP = {
   pending: "待付款",
-  paid: "購買課程",
+  paid: "已購買課程",
   failed: "付款失敗",
 } as const;
 
