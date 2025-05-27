@@ -5,7 +5,13 @@ import { Course } from "../entities/Course";
 import { StudentProgress } from "../entities/StudentProgress";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema } from "../validator/commonValidationSchemas";
-import { sectionSchema, updateSectionSchema, publishSectionSchema, aiSectionSchema } from "../validator/sectionVaildationsechema";
+import {
+  sectionSchema,
+  updateSectionSchema,
+  publishSectionSchema,
+  aiSectionSchema,
+  batchSectionSchema,
+} from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 import { generateSections } from "../services/aiService";
 
@@ -358,7 +364,7 @@ export async function publishSection(req: AuthRequest, res: Response, next: Next
 }
 
 /**
- * API #50 PPOST /api/v1/courses/:courseId/ai-generated-sections
+ * API #50 POST /api/v1/courses/:courseId/ai-generated-sections
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-courses-courseId-ai-generated-sections-1fc6a246851880948096f028d7fb5179?pvs=4)
  *
@@ -410,6 +416,72 @@ export async function generateCourseSections(req: AuthRequest, res: Response, ne
     res.status(200).json({
       status: "success",
       data: aiResult,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #51 POST /api/v1/instructor/courses/:courseId/sections/batch
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-courses-courseId-sections-batch-2006a246851880e5a48cf08e533e4ba5?pvs=4)
+ *
+ * 此 API 用於講師使用批量新增章節
+ */
+export async function batchCreateSections(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { id: courseId } = req.params;
+    const instructorId = req.user?.id;
+
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      res.status(400).json({ status: "fail", message: "無效的課程ID格式" });
+      return;
+    }
+
+    const parseResult = batchSectionSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ status: "fail", message: parseResult.error.errors[0].message });
+      return;
+    }
+
+    const courseRepo = AppDataSource.getRepository(Course);
+    const course = await courseRepo.findOne({
+      where: { id: courseId, instructorId },
+      relations: ["sections"],
+    });
+
+    if (!course) {
+      res.status(403).json({ status: "fail", message: "您無權限編輯此課程" });
+      return;
+    }
+
+    const existingCount = course.sections?.length || 0;
+
+    const sectionRepo = AppDataSource.getRepository(Section);
+    const newSections = parseResult.data.sections.map((s, index) => {
+      const section = new Section();
+      section.course = course;
+      section.title = s.title;
+      section.content = s.content;
+      section.orderIndex = existingCount + index + 1;
+      section.isPublished = false;
+      return section;
+    });
+
+    const savedSections = await sectionRepo.save(newSections);
+
+    res.status(200).json({
+      status: "success",
+      data: savedSections.map((s) => ({
+        id: s.id,
+        title: s.title,
+        content: s.content,
+        videoUrl: s.videoUrl,
+        isPublished: s.isPublished,
+        order: s.orderIndex,
+      })),
     });
   } catch (err) {
     next(err);
