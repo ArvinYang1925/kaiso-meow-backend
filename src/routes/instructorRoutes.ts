@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMe, updateMe, getStudentsByInstructor, uploadAvatar } from "../controllers/instructorController";
+import { getMe, updateMe, getStudentsByInstructor, uploadAvatar, getInstructorRevenue } from "../controllers/instructorController";
 import { getInstructorOrders } from "../controllers/instructorOrdersController";
 import { isInstructor } from "../middleware/isInstructor";
 import { isAuth } from "../middleware/isAuth";
@@ -34,6 +34,7 @@ router.post(
   imageUpload.single("file"), // ★ field name = file
   uploadAvatar,
 );
+router.get("/revenue", isAuth, isInstructor, getInstructorRevenue);
 
 router.get("/students", isAuth, isInstructor, getStudentsByInstructor);
 
