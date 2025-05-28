@@ -47,8 +47,8 @@ describe("POST /api/v1/instructor/courses/:courseId/sections/batch", () => {
 
   const validPayload = {
     sections: [
-      { title: "第一章", description: "簡介" },
-      { title: "第二章", description: "進階內容" },
+      { title: "第一章", content: "簡介" },
+      { title: "第二章", content: "進階內容" },
     ],
   };
 
@@ -116,7 +116,7 @@ describe("POST /api/v1/instructor/courses/:courseId/sections/batch", () => {
     const res = await request(app)
       .post(endpoint)
       .set("Authorization", `Bearer ${fakeToken}`)
-      .send({ sections: [{ description: "沒標題" }] });
+      .send({ sections: [{ content: "沒標題" }] });
 
     expect(res.status).toBe(400);
   });
