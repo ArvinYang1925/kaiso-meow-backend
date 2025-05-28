@@ -22,6 +22,7 @@ import {
   deleteSection,
   publishSection,
   generateCourseSections,
+  batchCreateSections,
 } from "../controllers/instructorSectionsController";
 
 const router = Router();
@@ -62,6 +63,7 @@ router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
 
 router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
 router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
+router.post("/courses/:id/sections/batch", isAuth, isInstructor, batchCreateSections);
 
 router.patch("/sections/:id", isAuth, isInstructor, updateSection);
 router.delete("/sections/:id", isAuth, isInstructor, deleteSection);
