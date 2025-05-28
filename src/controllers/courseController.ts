@@ -130,6 +130,8 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
   }
 }
 
+// API #21 Code Review Start
+
 /**
  * API #21 GET /api/v1/courses/:courseId/sections
  *
@@ -200,6 +202,10 @@ export async function getCourseSections(req: Request, res: Response, next: NextF
     next(error);
   }
 }
+
+// API #21 Code Review End
+
+// API #22 Code Review Start
 
 /**
  * API #22 GET /api/v1/courses/:courseId/progress
@@ -289,3 +295,5 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
     next(error);
   }
 }
+
+// API #22 Code Review End
