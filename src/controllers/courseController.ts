@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { AppDataSource } from "../config/db";
 import { Course } from "../entities/Course";
+import { AuthRequest } from "../middleware/isAuth";
+import { Section } from "../entities/Section";
+import { StudentProgress } from "../entities/StudentProgress";
 import { IsNull } from "typeorm";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 
@@ -121,6 +124,166 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
     res.json({
       status: "success",
       data: courseData,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #21 GET /api/v1/courses/:courseId/sections
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-courseId-sections-1d06a246851880398989f3606961d628?pvs=4)
+ *
+ * 此 API 取得指定課程的所有章節列表，根據章節順序排序
+ */
+export async function getCourseSections(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsed = uuidSchema.safeParse(courseId);
+
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    const course = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .where("course.id = :courseId", { courseId })
+      .andWhere("course.deleted_at IS NULL")
+      .getOne();
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該課程",
+      });
+      return;
+    }
+
+    const sections = await AppDataSource.getRepository(Section)
+      .createQueryBuilder("section")
+      .where("section.course_id = :courseId", { courseId })
+      .andWhere("section.deleted_at IS NULL")
+      .andWhere("section.is_published = true")
+      .orderBy("section.order_index", "ASC")
+      .getMany();
+
+    res.status(200).json({
+      status: "success",
+      message: "成功取得該課程的章節清單",
+      data: {
+        course: {
+          id: course.id,
+          title: course.title,
+        },
+        sections: sections.map((section) => ({
+          id: section.id,
+          title: section.title,
+          order: section.orderIndex,
+          content: section.content,
+          videoUrl: section.videoUrl,
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #22 GET /api/v1/courses/:courseId/progress
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-courseId-progress-1d06a24685188007b5b6fac93880b048?pvs=4)
+ *
+ * 此 API 取得當前用戶在指定課程的學習進度
+ */
+export async function getCourseProgress(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { courseId } = req.params;
+    const userId = req.user?.id;
+
+    // 驗證課程ID是否有效
+    if (!courseId) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      const err = parsed.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證課程是否存在
+    const course = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .where("course.id = :courseId", { courseId })
+      .andWhere("course.deleted_at IS NULL")
+      .getOne();
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該課程",
+      });
+      return;
+    }
+
+    // 取得課程總章節數
+    const totalSections = await AppDataSource.getRepository(Section)
+      .createQueryBuilder("section")
+      .where("section.course_id = :courseId", { courseId })
+      .andWhere("section.deleted_at IS NULL")
+      .andWhere("section.is_published = true")
+      .getCount();
+
+    // 取得已完成的章節數
+    const completedSections = await AppDataSource.getRepository(StudentProgress)
+      .createQueryBuilder("progress")
+      .where("progress.user_id = :userId", { userId })
+      .andWhere("progress.course_id = :courseId", { courseId })
+      .andWhere("progress.is_completed = true")
+      .getCount();
+
+    // 計算完成進度百分比
+    const percentage = totalSections > 0 ? parseFloat(((completedSections / totalSections) * 100).toFixed(2)) : 0;
+
+    // 取得進度記錄
+    const progressRecord = await AppDataSource.getRepository(StudentProgress)
+      .createQueryBuilder("progress")
+      .where("progress.user_id = :userId", { userId })
+      .andWhere("progress.course_id = :courseId", { courseId })
+      .getOne();
+
+    const progressId = progressRecord ? progressRecord.id : null;
+
+    res.status(200).json({
+      status: "success",
+      message: "成功取得章節進度",
+      data: {
+        progress: {
+          id: progressId,
+          courseId,
+          totalSections,
+          completedSections,
+          percentage,
+        },
+      },
     });
   } catch (error) {
     next(error);

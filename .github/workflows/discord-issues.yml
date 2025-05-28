@@ -1,0 +1,52 @@
+name: Notify Discord on issue events
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        # 組好完整的 webhook URL，少一層拼接比較直覺
+        env:
+          WEBHOOK_URL: https://discord.com/api/webhooks/${{ secrets.DISCORD_ISSUE_WEBHOOK_ID }}/${{ secrets.DISCORD_ISSUE_WEBHOOK_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_ACTION: ${{ github.event.action }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ACTOR: ${{ github.actor }}
+          # join() 會把陣列中所有 login / name 串成一串，用逗號分隔
+          ISSUE_ASSIGNEES: ${{ join(github.event.issue.assignees.*.login, ', ') }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST "$WEBHOOK_URL" \
+               -d @- <<EOF
+          {
+            "embeds": [
+              {
+                "title": "Issue #${ISSUE_NUMBER} ${ISSUE_ACTION}",
+                "url": "${ISSUE_URL}",
+                "description": "${ISSUE_TITLE}",
+                "color": 3447003,
+                "footer": {
+                  "text": "by ${ACTOR}"
+                },
+                "fields": [
+                  {
+                    "name": "Assignees",
+                    "value": "${ISSUE_ASSIGNEES:-None}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Labels",
+                    "value": "${ISSUE_LABELS:-None}",
+                    "inline": true
+                  }
+                ]
+              }
+            ]
+          }
+          EOF

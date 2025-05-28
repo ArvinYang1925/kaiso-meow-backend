@@ -3,10 +3,13 @@ import { AppDataSource } from "../config/db";
 import { Instructor } from "../entities/Instructor";
 import { AuthRequest } from "../middleware/isAuth";
 import { User } from "../entities/User";
+import { Order } from "../entities/Order";
 import { updateInstructorProfileSchema } from "../validator/authValidationSchemas";
 import { paginationSchema } from "../validator/commonValidationSchemas";
+import { revenueReportSchema } from "../validator/revenueValidationSchema";
 import { bucket } from "../utils/firebaseUtils";
 import path from "path";
+import { groupOrdersByInterval, formatRevenueData, calculateRevenueSummary } from "../utils/revenueUtils";
 
 /**
  * API #26 GET /api/v1/instructor/me
@@ -214,6 +217,104 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       },
     });
   } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #30 GET /api/v1/instructor/revenue?startTime=2024-01-01&endTime=2024-01-31&interval=day&courseId=uuid
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-revenue-startTime-endTime-interval-courseId-1d06a246851880aba774ea3225cdddec?pvs=4)
+ *
+ * 此 API 讓講師可查看收益報表，支援不同時間間隔和課程篩選
+ */
+export async function getInstructorRevenue(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.id;
+
+    // 驗證查詢參數
+    const result = revenueReportSchema.safeParse(req.query);
+    if (!result.success) {
+      const err = result.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    const { startTime, endTime, interval, courseId } = result.data;
+
+    // 調整結束時間到當天的 23:59:59
+    const adjustedEndTime = new Date(endTime);
+    adjustedEndTime.setHours(23, 59, 59, 999);
+
+    // 建立基礎查詢 - 先獲取所有符合條件的訂單
+    let query = AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .innerJoin("order.course", "course")
+      .where("course.instructorId = :instructorId", { instructorId: userId })
+      .andWhere("order.status = :status", { status: "paid" })
+      .andWhere("order.paidAt IS NOT NULL")
+      .andWhere("order.paidAt >= :startTime", { startTime })
+      .andWhere("order.paidAt <= :endTime", { endTime: adjustedEndTime })
+      .orderBy("order.paidAt", "ASC");
+
+    // 如果指定了課程 ID，加入課程篩選
+    if (courseId) {
+      query = query.andWhere("order.courseId = :courseId", { courseId });
+    }
+
+    // 獲取所有符合條件的訂單
+    const allOrders = await query.select(["order.id", "order.orderPrice", "order.paidAt", "order.courseId"]).getMany();
+
+    if (courseId && allOrders.length === 0) {
+      res.status(400).json({
+        status: "failed",
+        message: `找不到課程 ID 為 ${courseId} 的訂單。`,
+      });
+      return;
+    }
+
+    // 如果沒有訂單，直接返回空結果
+    if (allOrders.length === 0) {
+      res.status(200).json({
+        status: "success",
+        data: {
+          summary: {
+            totalOrders: 0,
+            totalRevenue: 0,
+            averageOrderValue: 0,
+          },
+          revenueData: [],
+          queryParams: {
+            startTime: startTime.toISOString(),
+            endTime: adjustedEndTime.toISOString(),
+            interval,
+            courseId: courseId || null,
+          },
+        },
+      });
+      return;
+    }
+
+    // 使用 utils 處理資料分組和格式化
+    const groupedData = groupOrdersByInterval(allOrders, interval);
+    const formattedData = formatRevenueData(groupedData, interval);
+    const summary = calculateRevenueSummary(allOrders);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        summary,
+        revenueData: formattedData,
+        queryParams: {
+          startTime: startTime.toISOString(),
+          endTime: adjustedEndTime.toISOString(),
+          interval,
+          courseId: courseId || null,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("Revenue calculation error:", err);
     next(err);
   }
 }

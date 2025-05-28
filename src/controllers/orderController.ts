@@ -15,7 +15,7 @@ import { paginationSchema, uuidSchema } from "../validator/commonValidationSchem
 // 訂單狀態對應的中文說明
 const ORDER_STATUS_MAP = {
   pending: "待付款",
-  paid: "購買課程",
+  paid: "已購買課程",
   failed: "付款失敗",
 } as const;
 
@@ -292,7 +292,7 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
     let paidAtTime = undefined;
     if (isFreeCourse) {
       const now = new Date();
-      paidAtTime = now.toLocaleString("en-US", { timeZone: "UTC" }); //new Date(now.setHours(now.getHours() - 8)); // 調整成 UTC 時間
+      paidAtTime = now.toISOString();
     }
 
     const order = AppDataSource.getRepository(Order).create({
@@ -610,8 +610,7 @@ export async function paymentCallback(req: Request, res: Response, next: NextFun
     if (RtnCode === "1") {
       order.status = "paid";
       const paidTime = TradeDate ? new Date(TradeDate) : new Date();
-      // 調整成 UTC 時間 與其他欄位時間格式統一
-      order.paidAt = new Date(paidTime.setHours(paidTime.getHours() - 8));
+      order.paidAt = paidTime;
     } else {
       order.status = "failed";
     }
