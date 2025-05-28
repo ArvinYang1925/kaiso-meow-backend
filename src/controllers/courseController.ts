@@ -297,3 +297,129 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
 }
 
 // API #22 Code Review End
+
+/**
+ * API #23 PATCH /api/v1/courses/:courseId/sections/:sectionId/complete
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-courses-courseId-sections-sectionId-complete-1d06a246851880bfb699fe79039e08a8?pvs=4)
+ *
+ * 此 API 標記章節為已完成，將資料庫欄位 student_progress is_completed 設為 true
+ */
+export async function markSectionComplete(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { courseId, sectionId } = req.params;
+    const userId = req.user?.id;
+
+    // 驗證課程ID是否有效
+    if (!courseId) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedCourseId = uuidSchema.safeParse(courseId);
+    if (!parsedCourseId.success) {
+      const err = parsedCourseId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證章節ID是否有效
+    if (!sectionId) {
+      res.status(400).json({
+        status: "failed",
+        message: "章節 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedSectionId = uuidSchema.safeParse(sectionId);
+    if (!parsedSectionId.success) {
+      const err = parsedSectionId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證課程是否存在
+    const course = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .where("course.id = :courseId", { courseId })
+      .andWhere("course.deleted_at IS NULL")
+      .getOne();
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該課程",
+      });
+      return;
+    }
+
+    // 驗證章節是否存在且屬於該課程
+    const section = await AppDataSource.getRepository(Section)
+      .createQueryBuilder("section")
+      .where("section.id = :sectionId", { sectionId })
+      .andWhere("section.course_id = :courseId", { courseId })
+      .andWhere("section.deleted_at IS NULL")
+      .andWhere("section.is_published = true")
+      .getOne();
+
+    if (!section) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該章節或章節不屬於此課程",
+      });
+      return;
+    }
+
+    // 查找現有的進度記錄
+    const existingProgress = await AppDataSource.getRepository(StudentProgress)
+      .createQueryBuilder("progress")
+      .where("progress.user_id = :userId", { userId })
+      .andWhere("progress.course_id = :courseId", { courseId })
+      .andWhere("progress.section_id = :sectionId", { sectionId })
+      .getOne();
+
+    if (!existingProgress) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到進度記錄",
+      });
+      return;
+    }
+
+    // 如果已經完成，直接返回成功
+    if (existingProgress.isCompleted) {
+      res.status(200).json({
+        status: "success",
+        message: "章節已標記為完成",
+        data: {
+          progressId: existingProgress.id,
+          isCompleted: true,
+        },
+      });
+      return;
+    }
+
+    // 更新現有記錄為已完成
+    await AppDataSource.getRepository(StudentProgress)
+      .createQueryBuilder()
+      .update(StudentProgress)
+      .set({ isCompleted: true })
+      .where("id = :id", { id: existingProgress.id })
+      .execute();
+
+    res.status(200).json({
+      status: "success",
+      message: "章節已標記為完成",
+      data: {
+        progressId: existingProgress.id,
+        isCompleted: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
