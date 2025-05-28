@@ -13,7 +13,12 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "test": "jest",
     "test:unit": "jest --testPathPattern='.*\\.unit\\.test\\.ts'",
-    "test:api": "jest --testPathPattern='.*\\.api\\.test\\.ts'"
+    "test:api": "jest --testPathPattern='.*\\.api\\.test\\.ts'",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/config/db.ts",
+    "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/db.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/db.ts -n",
+    "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "migration:status": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d src/config/db.ts"  
   },
   "keywords": [],
   "author": "",
