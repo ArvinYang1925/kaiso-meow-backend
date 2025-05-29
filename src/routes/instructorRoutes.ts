@@ -25,6 +25,9 @@ import {
   batchCreateSections,
 } from "../controllers/instructorSectionsController";
 
+import { videoUpload } from "../middleware/videoUpload";
+import { uploadVideo } from "../controllers/instructorVideoController";
+
 const router = Router();
 
 router.get("/me", isAuth, isInstructor, getMe);
@@ -60,6 +63,8 @@ router.post(
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
+
+router.post("/sections/:id/video", isAuth, isInstructor, videoUpload.single("file"), uploadVideo);
 
 router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
 router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
