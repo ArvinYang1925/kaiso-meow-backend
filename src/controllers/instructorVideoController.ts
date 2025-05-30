@@ -3,7 +3,8 @@ import { AppDataSource } from "../config/db";
 import { Section } from "../entities/Section";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { AuthRequest } from "../middleware/isAuth";
-import { transcodeQueue } from "../queues/transcodeQueue";
+import { simpleQueue } from "../utils/simpleQueue";
+import { handleVideoTranscodeTask } from "../services/videoTranscodeService";
 
 export async function uploadVideo(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -31,19 +32,11 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
       return;
     }
     const filePath = req.file?.path;
-    const originalName = req.file?.originalname;
 
     if (!filePath) {
       res.status(400).json({ status: "fail", message: "找不到上傳影片檔案" });
       return;
     }
-
-    // 加入轉檔工作排程
-    await transcodeQueue.add("transcode-video", {
-      sectionId,
-      originalName,
-      tempFilePath: filePath,
-    });
 
     res.status(202).json({
       status: "success",
@@ -54,6 +47,12 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
         uploadStatus: "processing",
       },
     });
+    simpleQueue.add(() =>
+      handleVideoTranscodeTask({
+        sectionId,
+        tempFilePath: filePath,
+      }),
+    );
   } catch (err) {
     next(err);
   }
