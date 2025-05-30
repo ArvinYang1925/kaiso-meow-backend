@@ -4,9 +4,6 @@ import { Section } from "../entities/Section";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { AuthRequest } from "../middleware/isAuth";
 import { transcodeQueue } from "../queues/transcodeQueue";
-import { tmpdir } from "os";
-import path from "path";
-import { writeFile } from "fs/promises";
 
 export async function uploadVideo(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -33,15 +30,19 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
       res.status(403).json({ status: "fail", message: "無權限操作此章節" });
       return;
     }
-    const { buffer, originalname } = req.file!;
-    const tempFilePath = path.join(tmpdir(), `${sectionId}_${Date.now()}_${originalname}`);
-    await writeFile(tempFilePath, buffer); // ✅ 寫成暫存檔
+    const filePath = req.file?.path;
+    const originalName = req.file?.originalname;
+
+    if (!filePath) {
+      res.status(400).json({ status: "fail", message: "找不到上傳影片檔案" });
+      return;
+    }
 
     // 加入轉檔工作排程
     await transcodeQueue.add("transcode-video", {
       sectionId,
-      originalName: originalname,
-      tempFilePath: tempFilePath,
+      originalName,
+      tempFilePath: filePath,
     });
 
     res.status(202).json({
