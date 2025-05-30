@@ -4,6 +4,9 @@ import { Section } from "../entities/Section";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { AuthRequest } from "../middleware/isAuth";
 import { transcodeQueue } from "../queues/transcodeQueue";
+import { tmpdir } from "os";
+import path from "path";
+import { writeFile } from "fs/promises";
 
 export async function uploadVideo(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -30,12 +33,15 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
       res.status(403).json({ status: "fail", message: "無權限操作此章節" });
       return;
     }
+    const { buffer, originalname } = req.file!;
+    const tempFilePath = path.join(tmpdir(), `${sectionId}_${Date.now()}_${originalname}`);
+    await writeFile(tempFilePath, buffer); // ✅ 寫成暫存檔
 
     // 加入轉檔工作排程
     await transcodeQueue.add("transcode-video", {
       sectionId,
-      originalName: req.file.originalname,
-      buffer: req.file.buffer, // memoryStorage
+      originalName: originalname,
+      tempFilePath: tempFilePath,
     });
 
     res.status(202).json({
