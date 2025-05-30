@@ -2,6 +2,9 @@ import admin from "firebase-admin";
 import dotenv from "dotenv";
 import fs from "fs/promises";
 import path from "path";
+import { lookup } from "mime-types"; // ✅ TS 友善 API
+import type { UploadResponse } from "@google-cloud/storage";
+
 dotenv.config();
 
 // 將 .env 裡的 JSON 字串 parse 出來
@@ -19,41 +22,40 @@ const bucket = admin.storage().bucket();
 export { admin, bucket };
 
 /**
- * 將 HLS 資料夾上傳至 Firebase Storage
- * @param sectionId 用來命名資料夾
- * @param localFolder 本機資料夾（含 m3u8 與 ts 檔案）
- * @returns 公開的 m3u8 URL
+ * 批次上傳 HLS 資料夾，回傳 master.m3u8 的公開 CDN URL
  */
-export async function uploadHLSFolderToFirebase(sectionId: string, localFolder: string): Promise<string> {
-  const firebaseStorage = bucket;
-  const files = await fs.readdir(localFolder);
+export const uploadHLSFolderToFirebase = async (sectionId: string, folderPath: string): Promise<string> => {
+  const files = await fs.readdir(folderPath);
+  const uploadPromises: Promise<UploadResponse>[] = [];
 
-  const uploadPromises = files.map(async (fileName) => {
-    const filePath = path.join(localFolder, fileName);
-    const destination = `videos/${sectionId}/${fileName}`; // 儲存位置
+  for (const fileName of files) {
+    const fullPath = path.join(folderPath, fileName);
+    const mimeType = lookup(fullPath) || "application/octet-stream";
 
-    await bucket.upload(filePath, {
-      destination,
+    const firebasePath = `sections/${sectionId}/hls/${fileName}`;
+
+    const uploadPromise = bucket.upload(fullPath, {
+      destination: firebasePath,
       metadata: {
-        contentType: getContentType(fileName),
-        cacheControl: "public, max-age=3600",
+        contentType: mimeType,
+        cacheControl: "public, max-age=31536000",
       },
+      public: true, // ✅ 讓檔案可被公開存取
     });
 
-    // 設為公開（選用，視需求）
-    const uploadedFile = firebaseStorage.file(destination);
-    await uploadedFile.makePublic();
-  });
+    uploadPromises.push(uploadPromise);
+  }
 
   await Promise.all(uploadPromises);
 
-  // 傳回公開 m3u8 檔案 URL
-  const m3u8Url = `https://storage.googleapis.com/${firebaseStorage.name}/videos/${sectionId}/playlist.m3u8`;
-  return m3u8Url;
-}
+  // ✅ 尋找 master.m3u8 並組成 URL
+  const masterName = "master.m3u8";
+  const masterFile = files.find((f) => f === masterName);
 
-function getContentType(fileName: string): string {
-  if (fileName.endsWith(".m3u8")) return "application/vnd.apple.mpegurl";
-  if (fileName.endsWith(".ts")) return "video/MP2T";
-  return "application/octet-stream";
-}
+  if (!masterFile) {
+    throw new Error("master.m3u8 不存在於輸出資料夾中");
+  }
+
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/sections/${sectionId}/hls/${masterFile}`;
+  return publicUrl;
+};
