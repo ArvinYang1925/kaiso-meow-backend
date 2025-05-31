@@ -130,8 +130,6 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
   }
 }
 
-// API #21 Code Review Start
-
 /**
  * API #21 GET /api/v1/courses/:courseId/sections
  *
@@ -202,10 +200,6 @@ export async function getCourseSections(req: Request, res: Response, next: NextF
     next(error);
   }
 }
-
-// API #21 Code Review End
-
-// API #22 Code Review Start
 
 /**
  * API #22 GET /api/v1/courses/:courseId/progress
@@ -296,10 +290,8 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
   }
 }
 
-// API #22 Code Review End
-
 /**
- * API #23 PATCH /api/v1/courses/:courseId/sections/:sectionId/complete
+ * API #25 PATCH /api/v1/courses/:courseId/sections/:sectionId/complete
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/PATCH-api-v1-courses-courseId-sections-sectionId-complete-1d06a246851880bfb699fe79039e08a8?pvs=4)
  *
