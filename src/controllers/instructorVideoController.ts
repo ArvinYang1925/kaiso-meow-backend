@@ -6,6 +6,13 @@ import { AuthRequest } from "../middleware/isAuth";
 import { simpleQueue } from "../utils/simpleQueue";
 import { handleVideoTranscodeTask } from "../services/videoTranscodeService";
 
+/**
+ * API #37 POST /api/v1/instructor/sections/:sectionId/video
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-sections-sectionId-video-1d06a2468518808f929ceb69ec9aede8?source=copy_link)
+ *
+ * 此 API 用於講師可以上傳影片
+ */
 export async function uploadVideo(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id: sectionId } = req.params;
