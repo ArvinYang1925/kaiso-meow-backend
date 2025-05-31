@@ -47,12 +47,9 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
         uploadStatus: "processing",
       },
     });
-    simpleQueue.add(() =>
-      handleVideoTranscodeTask({
-        sectionId,
-        tempFilePath: filePath,
-      }),
-    );
+    simpleQueue.add(async () => {
+      await handleVideoTranscodeTask({ sectionId, tempFilePath: filePath });
+    });
   } catch (err) {
     next(err);
   }
