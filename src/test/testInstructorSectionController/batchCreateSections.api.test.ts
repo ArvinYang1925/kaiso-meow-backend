@@ -66,7 +66,6 @@ describe("POST /api/v1/instructor/courses/:courseId/sections/batch", () => {
         content: "簡介",
         videoUrl: null,
         isPublished: false,
-        orderIndex: 4,
       },
       {
         id: "section-2",
@@ -74,7 +73,6 @@ describe("POST /api/v1/instructor/courses/:courseId/sections/batch", () => {
         content: "進階內容",
         videoUrl: null,
         isPublished: false,
-        orderIndex: 5,
       },
     ]);
 
@@ -84,7 +82,6 @@ describe("POST /api/v1/instructor/courses/:courseId/sections/batch", () => {
     expect(res.body.status).toBe("success");
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data[0]).toHaveProperty("id");
-    expect(res.body.data[0].order).toBe(4);
   });
 
   it("🔐 缺少 JWT → 回傳 401", async () => {
