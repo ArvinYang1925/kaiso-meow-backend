@@ -66,7 +66,6 @@ export async function getCourseSectionsByInstructor(req: AuthRequest, res: Respo
       content: section.content,
       videoUrl: section.videoUrl,
       isPublished: section.isPublished,
-      order: section.orderIndex,
     }));
 
     res.status(200).json({
@@ -104,7 +103,7 @@ export async function createSectionByInstructor(req: AuthRequest, res: Response,
     return;
   }
 
-  const { title } = parsedBody.data;
+  const { title, content } = parsedBody.data;
 
   try {
     const courseRepo = AppDataSource.getRepository(Course);
@@ -134,6 +133,7 @@ export async function createSectionByInstructor(req: AuthRequest, res: Response,
 
     const newSection = sectionRepo.create({
       title,
+      content,
       orderIndex: nextOrderIndex,
       course,
       isPublished: false,
@@ -146,8 +146,9 @@ export async function createSectionByInstructor(req: AuthRequest, res: Response,
       data: {
         id: newSection.id,
         title: newSection.title,
-        courseId: course.id,
-        createdAt: newSection.createdAt.toISOString(),
+        content: newSection.content,
+        videoUrl: newSection.videoUrl,
+        isPublished: newSection.isPublished,
       },
     });
   } catch (err) {
@@ -214,6 +215,8 @@ export async function updateSection(req: AuthRequest, res: Response, next: NextF
         id: updated.id,
         title: updated.title,
         content: updated.content,
+        videoUrl: updated.videoUrl,
+        isPublished: updated.isPublished,
       },
     });
   } catch (err) {
@@ -355,6 +358,8 @@ export async function publishSection(req: AuthRequest, res: Response, next: Next
       data: {
         id: section.id,
         title: section.title,
+        content: section.content,
+        videoUrl: section.videoUrl,
         isPublished: section.isPublished,
       },
     });
@@ -480,7 +485,6 @@ export async function batchCreateSections(req: AuthRequest, res: Response, next:
         content: s.content,
         videoUrl: s.videoUrl,
         isPublished: s.isPublished,
-        order: s.orderIndex,
       })),
     });
   } catch (err) {
