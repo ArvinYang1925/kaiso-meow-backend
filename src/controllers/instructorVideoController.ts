@@ -21,8 +21,8 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
       res.status(400).json({ status: "fail", message: "無效的章節ID格式" });
       return;
     }
-
-    if (!req.file) {
+    const file = req.file;
+    if (!file) {
       res.status(400).json({ status: "fail", message: "請上傳影片檔案" });
       return;
     }
@@ -33,17 +33,18 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
       where: { id: sectionId },
       relations: ["course"],
     });
-
-    if (!section || section.course.instructorId !== instructorId) {
-      res.status(403).json({ status: "fail", message: "無權限操作此章節" });
+    if (!section) {
+      res.status(404).json({ status: "fail", message: "找不到此章節" });
       return;
     }
     const filePath = req.file?.path;
 
-    if (!filePath) {
-      res.status(400).json({ status: "fail", message: "找不到上傳影片檔案" });
+    if (section.course.instructorId !== instructorId) {
+      res.status(403).json({ status: "fail", message: "無權限操作此章節" });
       return;
     }
+
+    const filePath = file.path;
 
     res.status(202).json({
       status: "success",
