@@ -503,14 +503,12 @@ export async function batchCreateSections(req: AuthRequest, res: Response, next:
  */
 export async function sortSections(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const instructorId = req.user?.id;
-    const { id: courseId } = req.params;
-    const { sections }: { sections: SectionInput[] } = req.body;
-
     type SectionInput = {
       id: string;
       order: number;
     };
+    const instructorId = req.user?.id;
+    const { id: courseId } = req.params;
 
     // 驗證 courseId 格式
     const parsed = uuidSchema.safeParse(courseId);
@@ -519,27 +517,29 @@ export async function sortSections(req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
+    // 先查詢課程（不帶 instructorId）
+    const courseRepo = AppDataSource.getRepository(Course);
+    const sectionRepo = AppDataSource.getRepository(Section);
+    const course = await courseRepo.findOne({
+      where: { id: courseId },
+      relations: ["orders", "instructor"],
+    });
+
     // 驗證參數格式（Zod Schema）
-    const validation = sortSectionsSchema.safeParse({ body: req.body });
+    const validation = sortSectionsSchema.safeParse(req.body);
     if (!validation.success) {
       res.status(400).json({ status: "fail", message: validation.error.format() });
       return;
     }
-
-    const courseRepo = AppDataSource.getRepository(Course);
-    const sectionRepo = AppDataSource.getRepository(Section);
-
-    // 確認課程存在且為當前講師所擁有
-    const course = await courseRepo.findOne({
-      where: { id: courseId, instructorId },
-      relations: ["orders"],
-    });
-
+    const { sections }: { sections: SectionInput[] } = req.body;
     if (!course) {
+      res.status(404).json({ status: "fail", message: "找不到課程" });
+      return;
+    }
+    if (course.instructorId !== instructorId) {
       res.status(403).json({ status: "fail", message: "無權限操作該課程" });
       return;
     }
-
     // 檢查課程狀態
     if (course.isPublished) {
       const hasPaidOrder = course.orders?.some((order) => order.paidAt !== null) ?? false;

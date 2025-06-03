@@ -33,12 +33,10 @@ export const batchSectionSchema = z.object({
 });
 
 export const sectionInputSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1, { message: "id 不可為空" }),
   order: z.number().int().min(1, { message: "order 必須為大於 0 的整數" }),
 });
 
 export const sortSectionsSchema = z.object({
-  body: z.object({
-    sections: z.array(sectionInputSchema).nonempty({ message: "sections 不可為空" }),
-  }),
+  sections: z.array(sectionInputSchema).nonempty({ message: "sections 不可為空" }),
 });
