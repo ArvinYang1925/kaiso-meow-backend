@@ -14,6 +14,7 @@ interface ResolutionSetting {
 
 /**
  * 支援的解析度清單
+ * 注意：解析度順序會影響 master.m3u8 中的順序
  */
 const resolutions: ResolutionSetting[] = [
   {
@@ -31,48 +32,75 @@ const resolutions: ResolutionSetting[] = [
 ];
 
 /**
+ * 將 bitrate 字串轉換為數字（單位：bps）
+ * @example "1400k" -> 1400000
+ */
+const parseBitrate = (bitrate: string): number => {
+  const value = parseInt(bitrate.replace("k", ""));
+  return value * 1000;
+};
+
+/**
+ * 生成 master.m3u8 內容
+ */
+const generateMasterM3U8 = (): string => {
+  const lines = ["#EXTM3U", "#EXT-X-VERSION:3"];
+
+  resolutions.forEach(({ label, width, height, bitrate }) => {
+    const bandwidth = parseBitrate(bitrate);
+    lines.push(`#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${width}x${height}`);
+    lines.push(`playlist_${label}.m3u8`);
+  });
+
+  return lines.join("\n") + "\n";
+};
+
+/**
  * 執行多解析度 HLS 影片轉檔
  *
  * @param inputPath 原始影片路徑
  * @param outputDir 輸出資料夾
+ * @returns 成功時回傳 undefined，失敗時回傳錯誤訊息
  */
-export const transcodeToMultiQuality = async (inputPath: string, outputDir: string): Promise<void> => {
-  await fs.mkdir(outputDir, { recursive: true });
+export const transcodeToMultiQuality = async (inputPath: string, outputDir: string): Promise<string | undefined> => {
+  try {
+    await fs.mkdir(outputDir, { recursive: true });
 
-  const transcodeJobs = resolutions.map(({ label, width, height, bitrate }) => {
-    return new Promise<void>((resolve, reject) => {
-      ffmpeg(inputPath)
-        .videoCodec("libx264")
-        .audioCodec("aac")
-        .outputOptions([
-          "-preset veryfast",
-          "-g 48",
-          "-sc_threshold 0",
-          `-s ${width}x${height}`,
-          `-b:v ${bitrate}`,
-          "-map 0:0", // 指定 video stream
-          "-map 0:a?", // 有音訊就用，沒音訊不報錯
-          "-b:a 128k",
-          "-hls_time 10",
-          "-hls_list_size 0",
-          `-hls_segment_filename ${path.join(outputDir, `${label}_seg_%03d.ts`)}`,
-        ])
-        .output(path.join(outputDir, `playlist_${label}.m3u8`))
-        .on("end", () => resolve())
-        .on("error", (err) => reject(err))
-        .run();
+    const transcodeJobs = resolutions.map(({ label, width, height, bitrate }) => {
+      return new Promise<void>((resolve, reject) => {
+        ffmpeg(inputPath)
+          .videoCodec("libx264")
+          .audioCodec("aac")
+          .outputOptions([
+            "-preset veryfast",
+            "-g 48",
+            "-sc_threshold 0",
+            `-s ${width}x${height}`,
+            `-b:v ${bitrate}`,
+            "-map 0:0", // 指定 video stream
+            "-map 0:a?", // 有音訊就用，沒音訊不報錯
+            "-b:a 128k",
+            "-hls_time 10",
+            "-hls_list_size 0",
+            `-hls_segment_filename ${path.join(outputDir, `${label}_seg_%03d.ts`)}`,
+          ])
+          .output(path.join(outputDir, `playlist_${label}.m3u8`))
+          .on("end", () => resolve())
+          .on("error", (err) => reject(err))
+          .run();
+      });
     });
-  });
 
-  await Promise.all(transcodeJobs);
+    await Promise.all(transcodeJobs);
 
-  // ➕ 建立 master.m3u8，讓播放器自動選擇畫質
-  const masterM3U8 = `#EXTM3U
-#EXT-X-VERSION:3
-#EXT-X-STREAM-INF:BANDWIDTH=1400000,RESOLUTION=1280x720
-playlist_720p.m3u8
-#EXT-X-STREAM-INF:BANDWIDTH=800000,RESOLUTION=854x480
-playlist_480p.m3u8
-`;
-  await fs.writeFile(path.join(outputDir, "master.m3u8"), masterM3U8);
+    // 使用自動生成的 master.m3u8 內容
+    const masterM3U8 = generateMasterM3U8();
+    await fs.writeFile(path.join(outputDir, "master.m3u8"), masterM3U8);
+    
+    return undefined; // 成功時回傳 undefined
+  } catch (err) {
+    const errorMessage = `轉檔失敗：${err instanceof Error ? err.message : String(err)}`;
+    console.error("❌ 影片轉檔失敗：", errorMessage);
+    return errorMessage; // 失敗時回傳錯誤訊息
+  }
 };

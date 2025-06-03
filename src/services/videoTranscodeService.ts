@@ -15,18 +15,51 @@ export const handleVideoTranscodeTask = async ({ sectionId, tempFilePath }: { se
   const sectionRepo = AppDataSource.getRepository(Section);
 
   try {
-    await transcodeToMultiQuality(tempFilePath, outputDir);
-    const videoUrl = await uploadHLSFolderToFirebase(sectionId, outputDir);
+    // 1. 執行轉檔
+    const transcodeError = await transcodeToMultiQuality(tempFilePath, outputDir);
+    if (transcodeError) {
+      // 轉檔失敗，更新 section.videoUrl 為錯誤訊息
+      const section = await sectionRepo.findOne({ where: { id: sectionId } });
+      if (section) {
+        section.videoUrl = `error:${transcodeError}`;
+        await sectionRepo.save(section);
+        console.error(`❌ Section ${sectionId} 轉檔失敗：${transcodeError}`);
+      }
+      return;
+    }
 
-    const section = await sectionRepo.findOne({ where: { id: sectionId } });
-    if (section) {
-      section.videoUrl = videoUrl;
-      await sectionRepo.save(section);
-      console.log(`✅ Section ${sectionId} 已更新 videoUrl`);
+    // 2. 上傳到 Firebase
+    try {
+      const videoUrl = await uploadHLSFolderToFirebase(sectionId, outputDir);
+
+      // 3. 更新資料庫
+      const section = await sectionRepo.findOne({ where: { id: sectionId } });
+      if (section) {
+        section.videoUrl = videoUrl;
+        await sectionRepo.save(section);
+        console.log(`✅ Section ${sectionId} 已更新 videoUrl`);
+      }
+    } catch (uploadErr) {
+      // 上傳失敗，更新 section.videoUrl 為錯誤訊息
+      const section = await sectionRepo.findOne({ where: { id: sectionId } });
+      if (section) {
+        const uploadError = `上傳失敗：${uploadErr instanceof Error ? uploadErr.message : String(uploadErr)}`;
+        section.videoUrl = `error:${uploadError}`;
+        await sectionRepo.save(section);
+        console.error(`❌ Section ${sectionId} 上傳失敗：${uploadError}`);
+      }
     }
   } catch (err) {
-    console.error("❌ 影片轉檔或上傳失敗：", err);
+    // 處理其他未預期的錯誤
+    const section = await sectionRepo.findOne({ where: { id: sectionId } });
+    if (section) {
+      const errorMessage = `處理失敗：${err instanceof Error ? err.message : String(err)}`;
+      section.videoUrl = `error:${errorMessage}`;
+      await sectionRepo.save(section);
+      console.error(`❌ Section ${sectionId} 處理失敗：${errorMessage}`);
+    }
   } finally {
+    // 清理暫存檔案
     await rm(tempFilePath, { force: true }).catch(() => {});
     await rm(outputDir, { recursive: true, force: true }).catch(() => {});
   }
