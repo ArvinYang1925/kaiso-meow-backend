@@ -543,7 +543,7 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
       TradeDesc: "課程購買",
       ItemName: order.course.title,
       ReturnURL: `${paymentConfig.BACKEND_URL}api/v1/orders/${orderId}/payment-callback`, // 後端回傳網址
-      ClientBackURL: `${paymentConfig.FRONTEND_URL}checkout/${orderId}`, //   根據前端回傳網址
+      ClientBackURL: `${paymentConfig.FRONTEND_URL}#/checkout/${orderId}`, //   根據前端回傳網址
       ChoosePayment: "ALL",
     };
 
