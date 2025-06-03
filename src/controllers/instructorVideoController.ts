@@ -72,19 +72,17 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
 export async function getVideoStatus(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { id: sectionId } = req.params;
-    console.log("章節ID", sectionId);
     const parsed = uuidSchema.safeParse(sectionId);
     if (!parsed.success) {
-      res.status(400).json({ status: "fail", message: "無效的章節IID格式" });
+      res.status(400).json({
+        status: "fail",
+        message: "無效的章節ID格式",
+        data: null,
+      });
       return;
     }
 
     const instructorId = req.user?.id;
-    if (!instructorId) {
-      res.status(401).json({ status: "fail", message: "未授權，請重新登入" });
-      return;
-    }
-
     const sectionRepo = AppDataSource.getRepository(Section);
     const section = await sectionRepo.findOne({
       where: { id: sectionId },
@@ -92,47 +90,47 @@ export async function getVideoStatus(req: AuthRequest, res: Response, next: Next
     });
 
     if (!section) {
-      res.status(404).json({ status: "fail", message: "找不到指定章節或是影片" });
+      res.status(404).json({
+        status: "fail",
+        message: "找不到章節",
+        data: null,
+      });
       return;
     }
 
     if (section.course.instructorId !== instructorId) {
-      res.status(403).json({ status: "fail", message: "無權限操作此章節" });
-      return;
-    }
-
-    if (section.videoUrl) {
-      res.status(200).json({
-        status: "success",
-        message: "影片轉檔完成",
-        data: {
-          uploadStatus: "done",
-          videoUrl: section.videoUrl,
-        },
+      res.status(403).json({
+        status: "fail",
+        message: "無權限查詢此章節",
+        data: null,
       });
       return;
     }
 
-    const isInQueue = simpleQueue.hasTask(sectionId);
-    if (isInQueue) {
+    // 檢查 videoUrl 是否包含錯誤訊息
+    if (section.videoUrl?.startsWith("error:")) {
+      const errorMessage = section.videoUrl.replace("error:", "");
       res.status(200).json({
         status: "success",
-        message: "影片正在轉檔中",
-        data: {
-          uploadStatus: "processing",
-          videoUrl: null,
-        },
-      });
-    } else {
-      res.status(200).json({
-        status: "success",
-        message: "影片轉檔失敗",
+        message: "影片處理失敗",
         data: {
           uploadStatus: "failed",
-          videoUrl: null,
+          videoUrl: errorMessage,
+          errorType: errorMessage.startsWith("轉檔失敗") ? "transcode" : errorMessage.startsWith("上傳失敗") ? "upload" : "unknown",
         },
       });
+      return;
     }
+
+    // 正常狀態回應
+    res.status(200).json({
+      status: "success",
+      message: "成功取得影片狀態",
+      data: {
+        uploadStatus: section.videoUrl ? "completed" : "processing",
+        videoUrl: section.videoUrl || null,
+      },
+    });
   } catch (err) {
     next(err);
   }
