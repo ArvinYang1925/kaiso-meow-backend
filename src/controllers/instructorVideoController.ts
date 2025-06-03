@@ -18,7 +18,7 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
     const { id: sectionId } = req.params;
     const parsed = uuidSchema.safeParse(sectionId);
     if (!parsed.success) {
-      res.status(400).json({ status: "failed", message: "無效的章節ID格式" });
+      res.status(400).json({ status: "fail", message: "無效的章節ID格式" });
       return;
     }
 
