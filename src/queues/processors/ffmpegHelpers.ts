@@ -71,19 +71,19 @@ export const transcodeToMultiQuality = async (inputPath: string, outputDir: stri
         ffmpeg(inputPath)
           .videoCodec("libx264")
           .audioCodec("aac")
-          .outputOptions([
-            "-preset veryfast",
-            "-g 48",
-            "-sc_threshold 0",
-            `-s ${width}x${height}`,
-            `-b:v ${bitrate}`,
-            "-map 0:0", // 指定 video stream
-            "-map 0:a?", // 有音訊就用，沒音訊不報錯
-            "-b:a 128k",
-            "-hls_time 10",
-            "-hls_list_size 0",
-            `-hls_segment_filename ${path.join(outputDir, `${label}_seg_%03d.ts`)}`,
-          ])
+          .addOption("-preset", "veryfast")
+          .addOption("-g", "48")
+          .addOption("-sc_threshold", "0")
+          .addOption("-pix_fmt", "yuv420p")
+          .addOption("-force_key_frames", "expr:gte(t,n_forced*2)")
+          .addOption("-vf", `scale=${width}:${height}`)
+          .addOption("-b:v", bitrate)
+          .addOption("-b:a", "128k")
+          .addOption("-map", "v:0") // ✅ 安全指定 video stream
+          .addOption("-map", "a?") // ✅ 有音訊就用，沒音訊不報錯
+          .addOption("-hls_time", "10")
+          .addOption("-hls_list_size", "0")
+          .addOption("-hls_segment_filename", path.join(outputDir, `${label}_seg_%03d.ts`))
           .output(path.join(outputDir, `playlist_${label}.m3u8`))
           .on("end", () => resolve())
           .on("error", (err) => reject(err))
@@ -96,7 +96,7 @@ export const transcodeToMultiQuality = async (inputPath: string, outputDir: stri
     // 使用自動生成的 master.m3u8 內容
     const masterM3U8 = generateMasterM3U8();
     await fs.writeFile(path.join(outputDir, "master.m3u8"), masterM3U8);
-    
+
     return undefined; // 成功時回傳 undefined
   } catch (err) {
     const errorMessage = `轉檔失敗：${err instanceof Error ? err.message : String(err)}`;
