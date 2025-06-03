@@ -26,7 +26,7 @@ import {
 } from "../controllers/instructorSectionsController";
 
 import { videoUpload } from "../middleware/videoUpload";
-import { uploadVideo } from "../controllers/instructorVideoController";
+import { uploadVideo, getVideoStatus } from "../controllers/instructorVideoController";
 
 const router = Router();
 
@@ -64,6 +64,7 @@ router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
 
+router.get("/sections/:id/video/status", isAuth, isInstructor, getVideoStatus);
 router.post("/sections/:id/video", isAuth, isInstructor, videoUpload.single("file"), uploadVideo);
 
 router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
