@@ -11,9 +11,11 @@ import {
   publishSectionSchema,
   aiSectionSchema,
   batchSectionSchema,
+  sortSectionsSchema,
 } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 import { generateSections } from "../services/aiService";
+import { In } from "typeorm";
 
 /**
  * API #43 GET -/api/v1/instructor/courses/:courseId/sections
@@ -487,6 +489,126 @@ export async function batchCreateSections(req: AuthRequest, res: Response, next:
         isPublished: s.isPublished,
       })),
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #53 PUT - /api/v1/instructor/courses/:courseId/sections/sort
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-instructor-courses-courseId-sections-sort-2046a24685188061841ec23dab608461?source=copy_link)
+ *
+ * 此 API 用於講師的課程章節排序紀錄
+ */
+export async function sortSections(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const instructorId = req.user?.id;
+    const { id: courseId } = req.params;
+    const { sections }: { sections: SectionInput[] } = req.body;
+
+    type SectionInput = {
+      id: string;
+      order: number;
+    };
+
+    // 驗證 courseId 格式
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      res.status(400).json({ status: "fail", message: "無效的課程ID格式" });
+      return;
+    }
+
+    // 驗證參數格式（Zod Schema）
+    const validation = sortSectionsSchema.safeParse({ body: req.body });
+    if (!validation.success) {
+      res.status(400).json({ status: "fail", message: validation.error.format() });
+      return;
+    }
+
+    const courseRepo = AppDataSource.getRepository(Course);
+    const sectionRepo = AppDataSource.getRepository(Section);
+
+    // 確認課程存在且為當前講師所擁有
+    const course = await courseRepo.findOne({
+      where: { id: courseId, instructorId },
+      relations: ["orders"],
+    });
+
+    if (!course) {
+      res.status(403).json({ status: "fail", message: "無權限操作該課程" });
+      return;
+    }
+
+    // 檢查課程狀態
+    if (course.isPublished) {
+      const hasPaidOrder = course.orders?.some((order) => order.paidAt !== null) ?? false;
+      if (hasPaidOrder) {
+        res.status(422).json({ status: "fail", message: "課程已有學生購買，無法更改章節順序" });
+        return;
+      }
+    }
+
+    const sectionIds = sections.map((s) => s.id);
+    const existingSections = await sectionRepo.find({
+      where: { id: In(sectionIds), course: { id: courseId } },
+    });
+
+    if (existingSections.length !== sections.length) {
+      res.status(422).json({ status: "fail", message: "部分章節不存在或不屬於該課程" });
+      return;
+    }
+
+    // 檢查章節狀態
+    const hasPublishedSection = existingSections.some((section) => section.isPublished);
+    if (hasPublishedSection) {
+      res.status(422).json({ status: "fail", message: "包含已發布的章節，無法更改順序" });
+      return;
+    }
+
+    // 檢查 order 值
+    const orderSet = new Set(sections.map((s) => s.order));
+    if (orderSet.size !== sections.length) {
+      res.status(422).json({ status: "fail", message: "每個章節的 order 值必須唯一" });
+      return;
+    }
+
+    // 檢查 order 值範圍
+    const minOrder = Math.min(...sections.map((s) => s.order));
+    const maxOrder = Math.max(...sections.map((s) => s.order));
+    if (minOrder !== 1 || maxOrder !== sections.length) {
+      res.status(422).json({ status: "fail", message: "order 值必須從 1 開始且連續" });
+      return;
+    }
+
+    // 使用 Transaction 更新排序
+    try {
+      await AppDataSource.transaction(async (manager) => {
+        for (const s of sections) {
+          await manager.update(Section, { id: s.id }, { orderIndex: s.order });
+        }
+      });
+
+      // 獲取更新後的章節列表
+      const updatedSections = await sectionRepo.find({
+        where: { course: { id: courseId } },
+        order: { orderIndex: "ASC" },
+      });
+
+      res.status(200).json({
+        status: "success",
+        message: "章節排序更新成功",
+        data: updatedSections.map((section) => ({
+          id: section.id,
+          title: section.title,
+          content: section.content,
+          videoUrl: section.videoUrl,
+          isPublished: section.isPublished,
+        })),
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
   } catch (err) {
     next(err);
   }
