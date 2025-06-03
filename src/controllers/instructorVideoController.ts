@@ -63,6 +63,57 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
 }
 
 /**
+ * 檢查是否為合法的 URL 格式
+ */
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    // 確保是 HTTPS URL
+    if (parsedUrl.protocol !== "https:") {
+      return false;
+    }
+    // 確保是 Firebase Storage URL
+    if (!parsedUrl.hostname.includes("storage.googleapis.com")) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * 解析 videoUrl 中的錯誤訊息
+ */
+const parseVideoUrlError = (videoUrl: string): { errorType: "transcode" | "upload" | "unknown"; message: string } => {
+  // 檢查是否為已知的錯誤格式
+  if (videoUrl.startsWith("轉檔失敗：")) {
+    return {
+      errorType: "transcode",
+      message: videoUrl,
+    };
+  }
+  if (videoUrl.startsWith("上傳失敗：")) {
+    return {
+      errorType: "upload",
+      message: videoUrl,
+    };
+  }
+  if (videoUrl.startsWith("處理失敗：")) {
+    return {
+      errorType: "unknown",
+      message: videoUrl,
+    };
+  }
+
+  // 如果不是已知格式，但也不是合法 URL，則視為未知錯誤
+  return {
+    errorType: "unknown",
+    message: "影片處理失敗：無效的影片 URL 格式",
+  };
+};
+
+/**
  * API #38 GET /api/v1/instructor/sections/:sectionId/video/status
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-sections-sectionId-video-status-1d06a246851880b3ba7bdfdeb74a72a8?source=copy_link)
@@ -107,28 +158,71 @@ export async function getVideoStatus(req: AuthRequest, res: Response, next: Next
       return;
     }
 
-    // 檢查 videoUrl 是否包含錯誤訊息
+    // 1. 檢查是否有明確的錯誤訊息（以 error: 開頭）
     if (section.videoUrl?.startsWith("error:")) {
       const errorMessage = section.videoUrl.replace("error:", "");
+      const { errorType, message } = parseVideoUrlError(errorMessage);
       res.status(200).json({
         status: "success",
         message: "影片處理失敗",
         data: {
           uploadStatus: "failed",
-          videoUrl: errorMessage,
-          errorType: errorMessage.startsWith("轉檔失敗") ? "transcode" : errorMessage.startsWith("上傳失敗") ? "upload" : "unknown",
+          videoUrl: message,
+          errorType,
         },
       });
       return;
     }
 
-    // 正常狀態回應
+    // 2. 檢查 videoUrl 是否存在且是否為合法 URL
+    if (section.videoUrl) {
+      if (isValidUrl(section.videoUrl)) {
+        // 合法 URL，表示轉檔上傳成功
+        res.status(200).json({
+          status: "success",
+          message: "成功取得影片狀態",
+          data: {
+            uploadStatus: "completed",
+            videoUrl: section.videoUrl,
+          },
+        });
+      } else {
+        // 不是合法 URL，解析可能的錯誤訊息
+        const { errorType, message } = parseVideoUrlError(section.videoUrl);
+        res.status(200).json({
+          status: "success",
+          message: "影片處理失敗",
+          data: {
+            uploadStatus: "failed",
+            videoUrl: message,
+            errorType,
+          },
+        });
+      }
+      return;
+    }
+
+    // 3. videoUrl 為 null，檢查任務狀態
+    const taskInfo = simpleQueue.getTaskInfo(sectionId);
+    if (taskInfo) {
+      res.status(200).json({
+        status: "success",
+        message: "成功取得影片狀態",
+        data: {
+          uploadStatus: taskInfo.status === "processing" ? "processing" : "pending",
+          videoUrl: null,
+        },
+      });
+      return;
+    }
+
+    // 4. 沒有任務資訊，表示沒有影片
     res.status(200).json({
       status: "success",
       message: "成功取得影片狀態",
       data: {
-        uploadStatus: section.videoUrl ? "completed" : "processing",
-        videoUrl: section.videoUrl || null,
+        uploadStatus: "no_video",
+        videoUrl: null,
       },
     });
   } catch (err) {
