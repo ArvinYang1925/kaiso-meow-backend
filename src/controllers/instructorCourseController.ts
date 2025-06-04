@@ -6,6 +6,7 @@ import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema, paginationSchema } from "../validator/commonValidationSchemas";
 import { IsNull } from "typeorm";
 import { Order } from "../entities/Order";
+import { User } from "../entities/User";
 import { bucket } from "../utils/firebaseUtils";
 import path from "path";
 
@@ -204,6 +205,10 @@ export async function getCoursesByInstructor(req: AuthRequest, res: Response, ne
       return;
     }
 
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: userId } });
+    const instructorName = user ? user.name : "未知";
+
     const courseRepo = AppDataSource.getRepository(Course);
 
     const [courses, totalItems] = await courseRepo
@@ -226,6 +231,7 @@ export async function getCoursesByInstructor(req: AuthRequest, res: Response, ne
 
       return {
         id,
+        instructorName,
         title,
         coverUrl,
         isFree,
