@@ -26,6 +26,9 @@ import {
   sortSections,
 } from "../controllers/instructorSectionsController";
 
+import { videoUpload } from "../middleware/videoUpload";
+import { uploadVideo, getVideoStatus } from "../controllers/instructorVideoController";
+
 const router = Router();
 
 router.get("/me", isAuth, isInstructor, getMe);
@@ -61,6 +64,9 @@ router.post(
 router.post("/coupons", isAuth, isInstructor, createCoupon);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
+
+router.get("/sections/:id/video/status", isAuth, isInstructor, getVideoStatus);
+router.post("/sections/:id/video", isAuth, isInstructor, videoUpload.single("file"), uploadVideo);
 
 router.get("/courses/:id/sections", isAuth, isInstructor, getCourseSectionsByInstructor);
 router.post("/courses/:id/sections", isAuth, isInstructor, createSectionByInstructor);
