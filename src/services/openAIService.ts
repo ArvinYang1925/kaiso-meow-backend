@@ -19,7 +19,7 @@ export async function generateSectionsWithOpenAI(params: GenerateSectionsParams)
   "sections": [
     {
       "title": string,
-      "description": string
+      "content": string
     }
   ]
 }
