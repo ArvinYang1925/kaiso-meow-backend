@@ -15,7 +15,6 @@ import {
 } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 import { generateSections } from "../services/aiService";
-import { In } from "typeorm";
 
 /**
  * API #43 GET -/api/v1/instructor/courses/:courseId/sections
@@ -549,18 +548,27 @@ export async function sortSections(req: AuthRequest, res: Response, next: NextFu
       }
     }
 
-    const sectionIds = sections.map((s) => s.id);
-    const existingSections = await sectionRepo.find({
-      where: { id: In(sectionIds), course: { id: courseId } },
+    // 撈出課程下所有章節
+    const allCourseSections = await sectionRepo.find({
+      where: { course: { id: courseId } },
     });
 
-    if (existingSections.length !== sections.length) {
-      res.status(422).json({ status: "fail", message: "部分章節不存在或不屬於該課程" });
+    // 檢查請求的章節數量是否等於課程的章節總數
+    if (sections.length !== allCourseSections.length) {
+      res.status(422).json({ status: "fail", message: "必須提供所有章節的排序" });
+      return;
+    }
+
+    // 檢查請求的章節是否都屬於該課程
+    const courseSectionIds = new Set(allCourseSections.map((section) => section.id));
+    const hasInvalidSection = sections.some((section) => !courseSectionIds.has(section.id));
+    if (hasInvalidSection) {
+      res.status(422).json({ status: "fail", message: "部分章節不屬於該課程" });
       return;
     }
 
     // 檢查章節狀態
-    const hasPublishedSection = existingSections.some((section) => section.isPublished);
+    const hasPublishedSection = allCourseSections.some((section) => section.isPublished);
     if (hasPublishedSection) {
       res.status(422).json({ status: "fail", message: "包含已發布的章節，無法更改順序" });
       return;
