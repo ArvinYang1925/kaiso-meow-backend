@@ -567,6 +567,14 @@ export async function sortSections(req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
+    //檢查ID是否重複
+    const inputSectionIds = sections.map((s) => s.id);
+    const uniqueInputIds = new Set(inputSectionIds);
+    if (uniqueInputIds.size !== sections.length) {
+      res.status(422).json({ status: "fail", message: "傳入的章節ID不能重複" });
+      return;
+    }
+
     // 檢查章節狀態
     const hasPublishedSection = allCourseSections.some((section) => section.isPublished);
     if (hasPublishedSection) {
