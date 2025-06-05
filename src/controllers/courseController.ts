@@ -553,7 +553,7 @@ export async function getSectionDetail(req: AuthRequest, res: Response, next: Ne
 }
 
 /**
- * API #20 GET /api/v1/courses/my-learning
+ * API #20 GET -/api/v1/courses/my-learning?page=1&pageSize=9
  *
  * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-my-learning-page-1-pageSize-9-1d06a246851880d1b046fef844ac7cf3?source=copy_link)
  *
