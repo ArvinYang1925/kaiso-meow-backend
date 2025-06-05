@@ -415,3 +415,138 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
     next(error);
   }
 }
+
+/**
+ * API #24 GET /api/v1/courses/:courseId/sections/:sectionId
+ *
+ * 📘 此 API 取得某章節影片與內容
+ *
+ * 此 API 用於學生查看特定章節的詳細內容，包括影片和文字內容，
+ * 同時會返回前後章節的資訊以便導航，以及學習進度
+ */
+export async function getSectionDetail(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { courseId, sectionId } = req.params;
+    const userId = req.user?.id;
+
+    // 驗證課程ID是否有效
+    if (!courseId) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedCourseId = uuidSchema.safeParse(courseId);
+    if (!parsedCourseId.success) {
+      const err = parsedCourseId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證章節ID是否有效
+    if (!sectionId) {
+      res.status(400).json({
+        status: "failed",
+        message: "章節 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedSectionId = uuidSchema.safeParse(sectionId);
+    if (!parsedSectionId.success) {
+      const err = parsedSectionId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證課程是否存在
+    const course = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .where("course.id = :courseId", { courseId })
+      .andWhere("course.deleted_at IS NULL")
+      .getOne();
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該課程",
+      });
+      return;
+    }
+
+    // 取得該課程所有已發布章節，並按順序排列
+    const allSections = await AppDataSource.getRepository(Section)
+      .createQueryBuilder("section")
+      .where("section.course_id = :courseId", { courseId })
+      .andWhere("section.deleted_at IS NULL")
+      .andWhere("section.is_published = true")
+      .orderBy("section.order_index", "ASC")
+      .getMany();
+
+    if (allSections.length === 0) {
+      res.status(404).json({
+        status: "failed",
+        message: "課程尚未有任何章節或章節都沒發佈",
+      });
+      return;
+    }
+
+    // 查找當前章節
+    const currentSection = allSections.find((section) => section.id === sectionId);
+
+    if (!currentSection) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該章節或章節不屬於此課程",
+      });
+      return;
+    }
+
+    // 查找前後章節
+    const currentIndex = allSections.findIndex((section) => section.id === sectionId);
+    const prevSection = currentIndex > 0 ? allSections[currentIndex - 1] : null;
+    const nextSection = currentIndex < allSections.length - 1 ? allSections[currentIndex + 1] : null;
+
+    // 查詢學習進度
+    let progress = { isCompleted: false };
+
+    if (userId) {
+      const progressRecord = await AppDataSource.getRepository(StudentProgress)
+        .createQueryBuilder("progress")
+        .where("progress.user_id = :userId", { userId })
+        .andWhere("progress.course_id = :courseId", { courseId })
+        .andWhere("progress.section_id = :sectionId", { sectionId })
+        .getOne();
+
+      if (progressRecord) {
+        progress = { isCompleted: progressRecord.isCompleted };
+      }
+    }
+
+    // 組織回傳資料
+    const sectionData = {
+      id: currentSection.id,
+      title: currentSection.title,
+      content: currentSection.content,
+      videoUrl: currentSection.videoUrl,
+      courseId: courseId,
+      courseName: course.title,
+      order: currentSection.orderIndex,
+      progress,
+      nextSection: nextSection ? { id: nextSection.id, title: nextSection.title } : null,
+      prevSection: prevSection ? { id: prevSection.id, title: prevSection.title } : null,
+    };
+
+    res.status(200).json({
+      status: "success",
+      message: "成功取得章節資料",
+      data: {
+        section: sectionData,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
