@@ -419,7 +419,7 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
 /**
  * API #24 GET /api/v1/courses/:courseId/sections/:sectionId
  *
- * 📘 此 API 取得某章節影片與內容
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-courseId-sections-sectionId-1d06a246851880d0986dc604b538e99c?source=copy_link)
  *
  * 此 API 用於學生查看特定章節的詳細內容，包括影片和文字內容，
  * 同時會返回前後章節的資訊以便導航，以及學習進度
