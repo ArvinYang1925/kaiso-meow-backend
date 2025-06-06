@@ -31,3 +31,12 @@ export const aiSectionSchema = z.object({
 export const batchSectionSchema = z.object({
   sections: z.array(sectionSchema).min(1, "至少需要一個章節"),
 });
+
+export const sectionInputSchema = z.object({
+  id: z.string().min(1, { message: "id 不可為空" }),
+  order: z.number().int().min(1, { message: "order 必須為大於 0 的整數" }),
+});
+
+export const sortSectionsSchema = z.object({
+  sections: z.array(sectionInputSchema).nonempty({ message: "sections 不可為空" }),
+});

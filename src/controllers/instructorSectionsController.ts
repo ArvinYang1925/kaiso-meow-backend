@@ -11,6 +11,7 @@ import {
   publishSectionSchema,
   aiSectionSchema,
   batchSectionSchema,
+  sortSectionsSchema,
 } from "../validator/sectionVaildationsechema";
 import { reorderSections } from "../utils/sectionUtils";
 import { generateSections } from "../services/aiService";
@@ -487,6 +488,143 @@ export async function batchCreateSections(req: AuthRequest, res: Response, next:
         isPublished: s.isPublished,
       })),
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #53 PUT - /api/v1/instructor/courses/:courseId/sections/sort
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-instructor-courses-courseId-sections-sort-2046a24685188061841ec23dab608461?source=copy_link)
+ *
+ * 此 API 用於講師的課程章節排序紀錄
+ */
+export async function sortSections(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    type SectionInput = {
+      id: string;
+      order: number;
+    };
+    const instructorId = req.user?.id;
+    const { id: courseId } = req.params;
+
+    // 驗證 courseId 格式
+    const parsed = uuidSchema.safeParse(courseId);
+    if (!parsed.success) {
+      res.status(400).json({ status: "fail", message: "無效的課程ID格式" });
+      return;
+    }
+
+    // 先查詢課程（不帶 instructorId）
+    const courseRepo = AppDataSource.getRepository(Course);
+    const sectionRepo = AppDataSource.getRepository(Section);
+    const course = await courseRepo.findOne({
+      where: { id: courseId },
+      relations: ["orders", "instructor"],
+    });
+
+    // 驗證參數格式（Zod Schema）
+    const validation = sortSectionsSchema.safeParse(req.body);
+    if (!validation.success) {
+      res.status(400).json({ status: "fail", message: validation.error.format() });
+      return;
+    }
+    const { sections }: { sections: SectionInput[] } = req.body;
+    if (!course) {
+      res.status(404).json({ status: "fail", message: "找不到課程" });
+      return;
+    }
+    if (course.instructorId !== instructorId) {
+      res.status(403).json({ status: "fail", message: "無權限操作該課程" });
+      return;
+    }
+    // 檢查課程狀態
+    if (course.isPublished) {
+      const hasPaidOrder = course.orders?.some((order) => order.paidAt !== null) ?? false;
+      if (hasPaidOrder) {
+        res.status(422).json({ status: "fail", message: "課程已有學生購買，無法更改章節順序" });
+        return;
+      }
+    }
+
+    // 撈出課程下所有章節
+    const allCourseSections = await sectionRepo.find({
+      where: { course: { id: courseId } },
+    });
+
+    // 檢查請求的章節數量是否等於課程的章節總數
+    if (sections.length !== allCourseSections.length) {
+      res.status(422).json({ status: "fail", message: "必須提供所有章節的排序" });
+      return;
+    }
+
+    // 檢查請求的章節是否都屬於該課程
+    const courseSectionIds = new Set(allCourseSections.map((section) => section.id));
+    const hasInvalidSection = sections.some((section) => !courseSectionIds.has(section.id));
+    if (hasInvalidSection) {
+      res.status(422).json({ status: "fail", message: "部分章節不屬於該課程" });
+      return;
+    }
+
+    //檢查ID是否重複
+    const inputSectionIds = sections.map((s) => s.id);
+    const uniqueInputIds = new Set(inputSectionIds);
+    if (uniqueInputIds.size !== sections.length) {
+      res.status(422).json({ status: "fail", message: "傳入的章節ID不能重複" });
+      return;
+    }
+
+    // 檢查章節狀態
+    const hasPublishedSection = allCourseSections.some((section) => section.isPublished);
+    if (hasPublishedSection) {
+      res.status(422).json({ status: "fail", message: "包含已發布的章節，無法更改順序" });
+      return;
+    }
+
+    // 檢查 order 值
+    const orderSet = new Set(sections.map((s) => s.order));
+    if (orderSet.size !== sections.length) {
+      res.status(422).json({ status: "fail", message: "每個章節的 order 值必須唯一" });
+      return;
+    }
+
+    // 檢查 order 值範圍
+    const minOrder = Math.min(...sections.map((s) => s.order));
+    const maxOrder = Math.max(...sections.map((s) => s.order));
+    if (minOrder !== 1 || maxOrder !== sections.length) {
+      res.status(422).json({ status: "fail", message: "order 值必須從 1 開始且連續" });
+      return;
+    }
+
+    // 使用 Transaction 更新排序
+    try {
+      await AppDataSource.transaction(async (manager) => {
+        for (const s of sections) {
+          await manager.update(Section, { id: s.id }, { orderIndex: s.order });
+        }
+      });
+
+      // 獲取更新後的章節列表
+      const updatedSections = await sectionRepo.find({
+        where: { course: { id: courseId } },
+        order: { orderIndex: "ASC" },
+      });
+
+      res.status(200).json({
+        status: "success",
+        message: "章節排序更新成功",
+        data: updatedSections.map((section) => ({
+          id: section.id,
+          title: section.title,
+          content: section.content,
+          videoUrl: section.videoUrl,
+          isPublished: section.isPublished,
+        })),
+      });
+    } catch (error: unknown) {
+      next(error);
+    }
   } catch (err) {
     next(err);
   }
