@@ -15,6 +15,10 @@ const newsletterRepo = AppDataSource.getRepository(NewsletterSubscriber);
 
 /**
  * API #4 POST /api/v1/auth/register
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-register)
+ *
+ * 此 API 用於註冊新用戶
  */
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
@@ -91,6 +95,10 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
 /**
  * API #5 POST /api/v1/auth/login
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-login)
+ *
+ * 此 API 用於用戶登入
  */
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
@@ -151,6 +159,10 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
 /**
  * API #8 POST /api/v1/auth/logout
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-logout)
+ *
+ * 此 API 用於用戶登出
  */
 export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
@@ -167,7 +179,11 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * API #1 ＧET /api/v1/auth/profile
+ * API #1 GET /api/v1/auth/profile
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-auth-profile)
+ *
+ * 此 API 用於獲取學生個人資料
  */
 export async function getStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -199,6 +215,10 @@ export async function getStudentProfile(req: AuthRequest, res: Response, next: N
 
 /**
  * API #2 PUT /api/v1/auth/student/profile
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-auth-student-profile)
+ *
+ * 此 API 用於修改學生個人資料
  */
 export async function editStudentProfile(req: AuthRequest, res: Response, next: NextFunction) {
   try {
