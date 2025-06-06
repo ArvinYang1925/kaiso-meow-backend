@@ -16,7 +16,7 @@ const newsletterRepo = AppDataSource.getRepository(NewsletterSubscriber);
 /**
  * API #4 POST /api/v1/auth/register
  *
- * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-register)
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-register-1d06a246851880d9b3f9ce38e84c68cd?source=copy_link)
  *
  * 此 API 用於註冊新用戶
  */
@@ -96,7 +96,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 /**
  * API #5 POST /api/v1/auth/login
  *
- * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-login)
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-login-1d06a246851880d19ed6d8d5b4e244d8?source=copy_link)
  *
  * 此 API 用於用戶登入
  */
@@ -160,7 +160,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 /**
  * API #8 POST /api/v1/auth/logout
  *
- * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-logout)
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-auth-logout-1d46a2468518800b8a11e5a9cec12959?source=copy_link)
  *
  * 此 API 用於用戶登出
  */
@@ -181,7 +181,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 /**
  * API #1 GET /api/v1/auth/profile
  *
- * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-auth-profile)
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-auth-profile-1d06a24685188099a0b6f692a01666b9?source=copy_link)
  *
  * 此 API 用於獲取學生個人資料
  */
@@ -216,7 +216,7 @@ export async function getStudentProfile(req: AuthRequest, res: Response, next: N
 /**
  * API #2 PUT /api/v1/auth/student/profile
  *
- * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-auth-student-profile)
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-auth-profile-1d06a2468518805eb8aadbddc386116c?source=copy_link)
  *
  * 此 API 用於修改學生個人資料
  */
