@@ -13,7 +13,14 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "test": "jest",
     "test:unit": "jest --testPathPattern='.*\\.unit\\.test\\.ts'",
-    "test:api": "jest --testPathPattern='.*\\.api\\.test\\.ts'"
+    "test:api": "jest --testPathPattern='.*\\.api\\.test\\.ts'",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/config/db.ts",
+    "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/config/db.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/config/db.ts",
+    "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
+    "migration:status": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d src/config/db.ts",
+    "schema:sync": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js schema:sync -d src/config/db.ts"
+
   },
   "keywords": [],
   "author": "",
@@ -52,6 +59,7 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.14.1",
     "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.15.2",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.30.1",
     "@typescript-eslint/parser": "^8.30.1",
@@ -63,7 +71,9 @@
     "prettier": "^3.5.3",
     "supertest": "^7.1.1",
     "ts-jest": "^29.3.3",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
   },
   "engines": {
