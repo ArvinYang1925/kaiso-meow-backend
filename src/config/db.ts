@@ -25,5 +25,5 @@ export const AppDataSource = new DataSource({
   synchronize: false, // 開發階段可以 true，正式環境建議改成 false
   logging: true,
   ssl: { rejectUnauthorized: false },
-  migrations: ["src/migrations/*.ts"],
+  migrations: ["src/migrations/*.js"],
 });
