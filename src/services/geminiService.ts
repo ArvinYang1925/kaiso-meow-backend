@@ -1,8 +1,8 @@
 import { GenerateSectionsParams, AIResponseSections } from "../types/ai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 export async function generateSectionsWithGemini(params: GenerateSectionsParams): Promise<AIResponseSections> {
   const { description, sectionIdea, expectedSectionCount } = params;
-  const { GoogleGenAI, Type } = await import("@google/genai");
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   const response = await ai.models.generateContent({
@@ -16,7 +16,7 @@ export async function generateSectionsWithGemini(params: GenerateSectionsParams)
 
 請輸出 JSON 格式，包含：
 - count：章節數量
-- sections：每一章包含 title 與 description
+- sections：每一章包含 title 與 content
 `,
     config: {
       responseMimeType: "application/json",

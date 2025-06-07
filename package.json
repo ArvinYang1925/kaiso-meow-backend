@@ -20,13 +20,12 @@
     "migration:create": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:create",
     "migration:status": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d src/config/db.ts",
     "schema:sync": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js schema:sync -d src/config/db.ts"
-
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/genai": "^1.0.1",
+    "@google/genai": "^1.4.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
