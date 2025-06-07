@@ -21,6 +21,10 @@ const ORDER_STATUS_MAP = {
 
 /**
  * API #10 GET /api/v1/orders
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-orders-page-1-pageSize-10-1d06a2468518804cb610e192245ee45e?source=copy_link)
+ *
+ * 此 API 用於取得用戶的訂單列表
  */
 export async function getOrders(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -78,6 +82,10 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
 
 /**
  * API #13 POST /api/v1/orders/preview
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-orders-preview-1db6a2468518806982d8f1a09c74ab55?source=copy_link)
+ *
+ * 此 API 用於預覽訂單信息
  */
 export async function previewOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -175,6 +183,10 @@ export async function previewOrder(req: AuthRequest, res: Response, next: NextFu
 
 /**
  * API #14 POST /api/v1/orders
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-orders-1cd6a2468518803fba98cac2ea5dfbe3?source=copy_link)
+ *
+ * 此 API 用於創建新訂單
  */
 export async function createOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -341,7 +353,10 @@ export async function createOrder(req: AuthRequest, res: Response, next: NextFun
 
 /**
  * API #15 GET /api/v1/orders/:orderId
- * （學生）顯示訂單資訊
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-orders-orderId-1d06a2468518808790b2e75f1552fc75?source=copy_link)
+ *
+ * 此 API 用於顯示特定訂單的詳細資訊
  */
 export async function getOrderDetail(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -416,7 +431,10 @@ export async function getOrderDetail(req: AuthRequest, res: Response, next: Next
 
 /**
  * API #16 POST /api/v1/orders/preview/apply-coupon
- * （學生）驗證折扣碼
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-orders-preview-apply-coupon-1d06a246851880e3a5bbeac574e202bf?source=copy_link)
+ *
+ * 此 API 用於驗證折扣碼並計算折扣後價格
  */
 export async function applyCoupon(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -479,7 +497,10 @@ export async function applyCoupon(req: AuthRequest, res: Response, next: NextFun
 
 /**
  * API #17 POST /api/v1/orders/:orderId/checkout
- * （學生）結帳（跳轉至綠界）
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-orders-orderId-checkout-1d06a24685188097a240d2ead3dd3cdb?source=copy_link)
+ *
+ * 此 API 用於結帳流程，處理付款並跳轉至綠界支付
  */
 export async function checkoutOrder(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -560,7 +581,10 @@ export async function checkoutOrder(req: AuthRequest, res: Response, next: NextF
 
 /**
  * API #18 POST /api/v1/orders/:orderId/payment-callback
- * 綠界付款完成 callback
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-orders-orderId-payment-callback-1d06a24685188035925ff321577af2e8?source=copy_link)
+ *
+ * 此 API 用於接收綠界支付完成後的回調資訊
  */
 export async function paymentCallback(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

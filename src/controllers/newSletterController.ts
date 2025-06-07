@@ -8,6 +8,10 @@ const newsletterRepository = AppDataSource.getRepository(NewsletterSubscriber);
 
 /**
  * API #7 POST /api/v1/newsletter/subscribe
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-newsletter-subscribe-1d06a2468518802fbafee61a0a4ac1fc?source=copy_link)
+ *
+ * 此 API 用於訂閱電子報
  */
 export async function subscribeNewsletter(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {

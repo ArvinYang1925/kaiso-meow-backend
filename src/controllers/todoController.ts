@@ -4,6 +4,13 @@ import { Todo } from "../entities/Todo";
 
 const todoRepository = AppDataSource.getRepository(Todo);
 
+/**
+ * API #100 GET /api/v1/todos
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-todos)
+ *
+ * 此 API 用於獲取所有待辦事項
+ */
 export async function getTodos(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const todos = await todoRepository.find();
@@ -13,6 +20,13 @@ export async function getTodos(req: Request, res: Response, next: NextFunction):
   }
 }
 
+/**
+ * API #101 POST /api/v1/todos
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-todos)
+ *
+ * 此 API 用於創建新的待辦事項
+ */
 export async function createTodo(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { title } = req.body;
@@ -28,6 +42,13 @@ export async function createTodo(req: Request, res: Response, next: NextFunction
   }
 }
 
+/**
+ * API #102 PUT /api/v1/todos/:id
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-todos-id)
+ *
+ * 此 API 用於更新指定待辦事項
+ */
 export async function updateTodo(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;
@@ -48,6 +69,13 @@ export async function updateTodo(req: Request, res: Response, next: NextFunction
   }
 }
 
+/**
+ * API #103 DELETE /api/v1/todos/:id
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/DELETE-api-v1-todos-id)
+ *
+ * 此 API 用於刪除指定待辦事項
+ */
 export async function deleteTodo(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;
