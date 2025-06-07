@@ -13,6 +13,10 @@ import { groupOrdersByInterval, formatRevenueData, calculateRevenueSummary } fro
 
 /**
  * API #26 GET /api/v1/instructor/me
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-instructor-me-1d06a24685188015af74cda2e2097341?source=copy_link)
+ *
+ * 此 API 用於獲取講師個人資料
  */
 export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -54,6 +58,10 @@ export async function getMe(req: AuthRequest, res: Response, next: NextFunction)
 
 /**
  * API #27 PUT /api/v1/instructor/me
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/PUT-api-v1-instructor-me-1d06a24685188079973afaa4ba946214?source=copy_link)
+ *
+ * 此 API 用於更新講師個人資料
  */
 export async function updateMe(req: AuthRequest, res: Response, next: NextFunction) {
   try {

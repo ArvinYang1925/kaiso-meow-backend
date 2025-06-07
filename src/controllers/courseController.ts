@@ -10,6 +10,10 @@ import { Order } from "../entities/Order";
 
 /**
  * API #11 GET /api/v1/courses?page=1&pageSize=9
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-page-1-pageSize-9-1d06a24685188029bb28fd7325658b3d?source=copy_link)
+ *
+ * 此 API 用於獲取課程列表，支援分頁功能
  */
 export async function getCourses(req: Request, res: Response, next: NextFunction) {
   try {
@@ -56,6 +60,10 @@ export async function getCourses(req: Request, res: Response, next: NextFunction
 
 /**
  * API #12 GET /api/v1/courses/:courseId
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-courseId-1d06a2468518807abb1ce0e0f3bd92b0?source=copy_link)
+ *
+ * 此 API 用於獲取單一課程的詳細資訊
  */
 export async function getCourseDetail(req: Request, res: Response, next: NextFunction) {
   try {
