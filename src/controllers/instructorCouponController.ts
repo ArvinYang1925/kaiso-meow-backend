@@ -95,7 +95,7 @@ export async function getCouponsByInstructor(req: AuthRequest, res: Response, ne
       order: { createdAt: "DESC" },
       skip,
       take: pageSize,
-      select: ["id", "couponName", "type", "code", "value", "expiresAt"],
+      select: ["id", "couponName", "type", "code", "value", "startsAt", "expiresAt"],
     });
 
     res.status(200).json({
