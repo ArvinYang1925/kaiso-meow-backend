@@ -261,12 +261,15 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
       .andWhere("section.is_published = true")
       .getCount();
 
-    // 取得已完成的章節數
+    // 取得已完成的章節數（只計算已發布的章節）
     const completedSections = await AppDataSource.getRepository(StudentProgress)
       .createQueryBuilder("progress")
+      .innerJoin("progress.section", "section")
       .where("progress.user_id = :userId", { userId })
-      .andWhere("progress.course_id = :courseId", { courseId })
+      .andWhere("progress.course_id = :courseId", { courseId: course.id })
       .andWhere("progress.is_completed = true")
+      .andWhere("section.is_published = true")
+      .andWhere("section.deleted_at IS NULL")
       .getCount();
 
     // 計算完成進度百分比
@@ -383,40 +386,47 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
       .andWhere("progress.section_id = :sectionId", { sectionId })
       .getOne();
 
+    let progressId: string;
+
     if (!existingProgress) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到進度記錄",
+      // 如果沒有進度記錄，新增一筆並設為已完成
+      const savedProgress = await AppDataSource.getRepository(StudentProgress).save({
+        user: { id: userId },
+        course: { id: courseId },
+        section: { id: sectionId },
+        isCompleted: true,
       });
-      return;
-    }
+      progressId = savedProgress.id;
+    } else {
+      // 如果已經完成，直接返回成功
+      if (existingProgress.isCompleted) {
+        res.status(200).json({
+          status: "success",
+          message: "章節已標記為完成",
+          data: {
+            progressId: existingProgress.id,
+            isCompleted: true,
+          },
+        });
+        return;
+      }
 
-    // 如果已經完成，直接返回成功
-    if (existingProgress.isCompleted) {
-      res.status(200).json({
-        status: "success",
-        message: "章節已標記為完成",
-        data: {
-          progressId: existingProgress.id,
-          isCompleted: true,
-        },
-      });
-      return;
-    }
+      // 更新現有記錄為已完成
+      await AppDataSource.getRepository(StudentProgress)
+        .createQueryBuilder()
+        .update(StudentProgress)
+        .set({ isCompleted: true })
+        .where("id = :id", { id: existingProgress.id })
+        .execute();
 
-    // 更新現有記錄為已完成
-    await AppDataSource.getRepository(StudentProgress)
-      .createQueryBuilder()
-      .update(StudentProgress)
-      .set({ isCompleted: true })
-      .where("id = :id", { id: existingProgress.id })
-      .execute();
+      progressId = existingProgress.id;
+    }
 
     res.status(200).json({
       status: "success",
       message: "章節已標記為完成",
       data: {
-        progressId: existingProgress.id,
+        progressId,
         isCompleted: true,
       },
     });
@@ -629,12 +639,15 @@ export async function getMyLearningCourses(req: AuthRequest, res: Response, next
         .andWhere("section.is_published = true")
         .getCount();
 
-      // 獲取已完成的章節數
+      // 獲取已完成的章節數（只計算已發布的章節）
       const completedSections = await AppDataSource.getRepository(StudentProgress)
         .createQueryBuilder("progress")
+        .innerJoin("progress.section", "section")
         .where("progress.user_id = :userId", { userId })
         .andWhere("progress.course_id = :courseId", { courseId: course.id })
         .andWhere("progress.is_completed = true")
+        .andWhere("section.is_published = true")
+        .andWhere("section.deleted_at IS NULL")
         .getCount();
 
       // 計算完成進度百分比
