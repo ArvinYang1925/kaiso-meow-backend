@@ -59,3 +59,24 @@ export const uploadHLSFolderToFirebase = async (sectionId: string, folderPath: s
   const publicUrl = `https://storage.googleapis.com/${bucket.name}/sections/${sectionId}/hls/${masterFile}`;
   return publicUrl;
 };
+
+/**
+ * 直接上傳影片到 Firebase，回傳影片的公開 CDN URL
+ */
+export const uploadVideoToFirebase = async (sectionId: string, filePath: string, originalFilename: string): Promise<string> => {
+  const ext = path.extname(originalFilename).toLowerCase();
+  const firebasePath = `sections/${sectionId}/video${ext}`;
+  const mimeType = lookup(filePath) || "video/mp4";
+
+  await bucket.upload(filePath, {
+    destination: firebasePath,
+    metadata: {
+      contentType: mimeType,
+      cacheControl: "public, max-age=31536000",
+    },
+    public: true, // ✅ 讓檔案可被公開存取
+  });
+
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${firebasePath}`;
+  return publicUrl;
+};
