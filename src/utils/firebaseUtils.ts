@@ -61,17 +61,22 @@ export const uploadHLSFolderToFirebase = async (sectionId: string, folderPath: s
 };
 
 /**
- * 刪除指定 section 的 HLS 影片資料夾
- * @param sectionId 章節 ID
+ * 直接上傳影片到 Firebase，回傳影片的公開 CDN URL
  */
-export async function deleteHLSFolderFromFirebase(sectionId: string) {
-  const folderPath = `sections/${sectionId}/hls/`;
-  const [files] = await bucket.getFiles({ prefix: folderPath });
+export const uploadVideoToFirebase = async (sectionId: string, filePath: string, originalFilename: string): Promise<string> => {
+  const ext = path.extname(originalFilename).toLowerCase();
+  const firebasePath = `sections/${sectionId}/video${ext}`;
+  const mimeType = lookup(filePath) || "video/mp4";
 
-  if (files.length === 0) {
-    throw new Error("該資料夾中找不到任何影片檔案");
-  }
+  await bucket.upload(filePath, {
+    destination: firebasePath,
+    metadata: {
+      contentType: mimeType,
+      cacheControl: "public, max-age=31536000",
+    },
+    public: true, // ✅ 讓檔案可被公開存取
+  });
 
-  const deletePromises = files.map((file) => file.delete());
-  await Promise.all(deletePromises);
-}
+  const publicUrl = `https://storage.googleapis.com/${bucket.name}/${firebasePath}`;
+  return publicUrl;
+};

@@ -6,6 +6,7 @@ import { Section } from "../entities/Section";
 import { StudentProgress } from "../entities/StudentProgress";
 import { IsNull } from "typeorm";
 import { uuidSchema } from "../validator/commonValidationSchemas";
+import { Order } from "../entities/Order";
 
 /**
  * API #11 GET /api/v1/courses?page=1&pageSize=9
@@ -260,12 +261,15 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
       .andWhere("section.is_published = true")
       .getCount();
 
-    // 取得已完成的章節數
+    // 取得已完成的章節數（只計算已發布的章節）
     const completedSections = await AppDataSource.getRepository(StudentProgress)
       .createQueryBuilder("progress")
+      .innerJoin("progress.section", "section")
       .where("progress.user_id = :userId", { userId })
-      .andWhere("progress.course_id = :courseId", { courseId })
+      .andWhere("progress.course_id = :courseId", { courseId: course.id })
       .andWhere("progress.is_completed = true")
+      .andWhere("section.is_published = true")
+      .andWhere("section.deleted_at IS NULL")
       .getCount();
 
     // 計算完成進度百分比
@@ -382,41 +386,294 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
       .andWhere("progress.section_id = :sectionId", { sectionId })
       .getOne();
 
+    let progressId: string;
+
     if (!existingProgress) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到進度記錄",
+      // 如果沒有進度記錄，新增一筆並設為已完成
+      const savedProgress = await AppDataSource.getRepository(StudentProgress).save({
+        user: { id: userId },
+        course: { id: courseId },
+        section: { id: sectionId },
+        isCompleted: true,
       });
-      return;
-    }
+      progressId = savedProgress.id;
+    } else {
+      // 如果已經完成，直接返回成功
+      if (existingProgress.isCompleted) {
+        res.status(200).json({
+          status: "success",
+          message: "章節已標記為完成",
+          data: {
+            progressId: existingProgress.id,
+            isCompleted: true,
+          },
+        });
+        return;
+      }
 
-    // 如果已經完成，直接返回成功
-    if (existingProgress.isCompleted) {
-      res.status(200).json({
-        status: "success",
-        message: "章節已標記為完成",
-        data: {
-          progressId: existingProgress.id,
-          isCompleted: true,
-        },
-      });
-      return;
-    }
+      // 更新現有記錄為已完成
+      await AppDataSource.getRepository(StudentProgress)
+        .createQueryBuilder()
+        .update(StudentProgress)
+        .set({ isCompleted: true })
+        .where("id = :id", { id: existingProgress.id })
+        .execute();
 
-    // 更新現有記錄為已完成
-    await AppDataSource.getRepository(StudentProgress)
-      .createQueryBuilder()
-      .update(StudentProgress)
-      .set({ isCompleted: true })
-      .where("id = :id", { id: existingProgress.id })
-      .execute();
+      progressId = existingProgress.id;
+    }
 
     res.status(200).json({
       status: "success",
       message: "章節已標記為完成",
       data: {
-        progressId: existingProgress.id,
+        progressId,
         isCompleted: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #24 GET /api/v1/courses/:courseId/sections/:sectionId
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-courseId-sections-sectionId-1d06a246851880d0986dc604b538e99c?source=copy_link)
+ *
+ * 此 API 用於學生查看特定章節的詳細內容，包括影片和文字內容，
+ * 同時會返回前後章節的資訊以便導航，以及學習進度
+ */
+export async function getSectionDetail(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { courseId, sectionId } = req.params;
+    const userId = req.user?.id;
+
+    // 驗證課程ID是否有效
+    if (!courseId) {
+      res.status(400).json({
+        status: "failed",
+        message: "課程 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedCourseId = uuidSchema.safeParse(courseId);
+    if (!parsedCourseId.success) {
+      const err = parsedCourseId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證章節ID是否有效
+    if (!sectionId) {
+      res.status(400).json({
+        status: "failed",
+        message: "章節 ID 是必填的",
+      });
+      return;
+    }
+
+    const parsedSectionId = uuidSchema.safeParse(sectionId);
+    if (!parsedSectionId.success) {
+      const err = parsedSectionId.error.errors[0];
+      res.status(400).json({ status: "failed", message: err.message });
+      return;
+    }
+
+    // 驗證課程是否存在
+    const course = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .where("course.id = :courseId", { courseId })
+      .andWhere("course.deleted_at IS NULL")
+      .getOne();
+
+    if (!course) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該課程",
+      });
+      return;
+    }
+
+    // 取得該課程所有已發布章節，並按順序排列
+    const allSections = await AppDataSource.getRepository(Section)
+      .createQueryBuilder("section")
+      .where("section.course_id = :courseId", { courseId })
+      .andWhere("section.deleted_at IS NULL")
+      .andWhere("section.is_published = true")
+      .orderBy("section.order_index", "ASC")
+      .getMany();
+
+    if (allSections.length === 0) {
+      res.status(404).json({
+        status: "failed",
+        message: "課程尚未有任何章節或章節都沒發佈",
+      });
+      return;
+    }
+
+    // 查找當前章節
+    const currentSection = allSections.find((section) => section.id === sectionId);
+
+    if (!currentSection) {
+      res.status(404).json({
+        status: "failed",
+        message: "找不到該章節或章節不屬於此課程",
+      });
+      return;
+    }
+
+    // 查找前後章節
+    const currentIndex = allSections.findIndex((section) => section.id === sectionId);
+    const prevSection = currentIndex > 0 ? allSections[currentIndex - 1] : null;
+    const nextSection = currentIndex < allSections.length - 1 ? allSections[currentIndex + 1] : null;
+
+    // 查詢學習進度
+    let progress = { isCompleted: false };
+
+    if (userId) {
+      const progressRecord = await AppDataSource.getRepository(StudentProgress)
+        .createQueryBuilder("progress")
+        .where("progress.user_id = :userId", { userId })
+        .andWhere("progress.course_id = :courseId", { courseId })
+        .andWhere("progress.section_id = :sectionId", { sectionId })
+        .getOne();
+
+      if (progressRecord) {
+        progress = { isCompleted: progressRecord.isCompleted };
+      }
+    }
+
+    // 組織回傳資料
+    const sectionData = {
+      id: currentSection.id,
+      title: currentSection.title,
+      content: currentSection.content,
+      videoUrl: currentSection.videoUrl,
+      courseId: courseId,
+      courseName: course.title,
+      order: currentSection.orderIndex,
+      progress,
+      nextSection: nextSection ? { id: nextSection.id, title: nextSection.title } : null,
+      prevSection: prevSection ? { id: prevSection.id, title: prevSection.title } : null,
+    };
+
+    res.status(200).json({
+      status: "success",
+      message: "成功取得章節資料",
+      data: {
+        section: sectionData,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * API #20 GET -/api/v1/courses/my-learning?page=1&pageSize=9
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/GET-api-v1-courses-my-learning-page-1-pageSize-9-1d06a246851880d1b046fef844ac7cf3?source=copy_link)
+ *
+ * 此 API 用於學生查看正在學習的課程清單
+ */
+export async function getMyLearningCourses(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        status: "failed",
+        message: "未授權，請重新登入",
+      });
+      return;
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 9;
+    const skip = (page - 1) * pageSize;
+
+    // 1. 從訂單表中獲取該學生已購買的課程 ID
+    const purchasedCoursesIds = await AppDataSource.getRepository(Order)
+      .createQueryBuilder("order")
+      .select("DISTINCT order.course_id", "courseId")
+      .where("order.user_id = :userId", { userId })
+      .andWhere("order.status = :status", { status: "paid" }) // 只取已支付的訂單
+      .getRawMany();
+
+    if (purchasedCoursesIds.length === 0) {
+      res.status(200).json({
+        status: "success",
+        message: "成功取得學習課程資料",
+        data: [],
+        pagination: {
+          currentPage: page,
+          pageSize,
+          totalPages: 0,
+          totalItems: 0,
+        },
+      });
+      return;
+    }
+
+    const courseIds = purchasedCoursesIds.map((item) => item.courseId);
+
+    // 2. 查詢課程詳細資料
+    const [courses, totalItems] = await AppDataSource.getRepository(Course)
+      .createQueryBuilder("course")
+      .leftJoinAndSelect("course.instructor", "instructor")
+      .where("course.id IN (:...courseIds)", { courseIds })
+      .andWhere("course.deleted_at IS NULL")
+      .skip(skip)
+      .take(pageSize)
+      .orderBy("course.created_at", "DESC")
+      .getManyAndCount();
+
+    // 3. 計算每個課程的進度
+    const progressPromises = courses.map(async (course) => {
+      // 獲取課程總章節數
+      const totalSections = await AppDataSource.getRepository(Section)
+        .createQueryBuilder("section")
+        .where("section.course_id = :courseId", { courseId: course.id })
+        .andWhere("section.deleted_at IS NULL")
+        .andWhere("section.is_published = true")
+        .getCount();
+
+      // 獲取已完成的章節數（只計算已發布的章節）
+      const completedSections = await AppDataSource.getRepository(StudentProgress)
+        .createQueryBuilder("progress")
+        .innerJoin("progress.section", "section")
+        .where("progress.user_id = :userId", { userId })
+        .andWhere("progress.course_id = :courseId", { courseId: course.id })
+        .andWhere("progress.is_completed = true")
+        .andWhere("section.is_published = true")
+        .andWhere("section.deleted_at IS NULL")
+        .getCount();
+
+      // 計算完成進度百分比
+      const progressPercentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
+
+      return {
+        courseId: course.id,
+        title: course.title,
+        coverUrl: course.coverUrl,
+        progressPercentage,
+        instructorName: course.instructor?.name || "",
+      };
+    });
+
+    const learningCourses = await Promise.all(progressPromises);
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    res.status(200).json({
+      status: "success",
+      message: "成功取得學習課程資料",
+      data: learningCourses,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalPages,
+        totalItems,
       },
     });
   } catch (error) {

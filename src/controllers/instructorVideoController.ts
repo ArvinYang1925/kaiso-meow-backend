@@ -5,8 +5,8 @@ import { Order } from "../entities/Order";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { AuthRequest } from "../middleware/isAuth";
 import { simpleQueue } from "../utils/simpleQueue";
-import { handleVideoTranscodeTask } from "../services/videoTranscodeService";
 import { deleteHLSFolderFromFirebase } from "../utils/firebaseUtils";
+import { handleVideoUploadTask } from "../services/videoTranscodeService";
 
 /**
  * API #37 POST /api/v1/instructor/sections/:sectionId/video
@@ -49,15 +49,21 @@ export async function uploadVideo(req: AuthRequest, res: Response, next: NextFun
 
     res.status(202).json({
       status: "success",
-      message: "影片已接收，正在轉檔中",
+      message: "影片已接收，正在上傳中",
       data: {
         id: section.id,
         title: section.title,
         uploadStatus: "processing",
       },
     });
+
+    // 將上傳任務加入佇列
     simpleQueue.add(async () => {
-      await handleVideoTranscodeTask({ sectionId, tempFilePath: filePath });
+      await handleVideoUploadTask({
+        sectionId,
+        tempFilePath: filePath,
+        originalFilename: file.originalname,
+      });
     }, sectionId);
   } catch (err) {
     next(err);
