@@ -399,15 +399,16 @@ export async function getOrderDetail(req: AuthRequest, res: Response, next: Next
       updatedAt: formatDate(order.updatedAt),
       paidAt: order.paidAt ? formatDate(order.paidAt) : null,
       course: {
+        id: order.course.id,
         title: order.course.title,
-        coverUrl: order.course.coverUrl,
+        cover_url: order.course.coverUrl,
         price: order.course.price,
       },
       coupon: order.coupon
         ? {
-            couponValue: order.coupon.value,
-            couponCode: order.coupon.code,
-            couponType: order.coupon.type,
+            value: order.coupon.value,
+            code: order.coupon.code,
+            type: order.coupon.type,
             couponName: order.coupon.couponName,
           }
         : null,
