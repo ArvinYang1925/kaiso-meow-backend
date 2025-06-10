@@ -242,47 +242,47 @@ export async function getVideoStatus(req: AuthRequest, res: Response, next: Next
 export async function deleteSectionVideo(req: AuthRequest, res: Response, next: NextFunction) {
   const { id: sectionId } = req.params;
   const parsed = uuidSchema.safeParse(sectionId);
-  if (!parsed.success) {
-    res.status(400).json({ status: "fail", message: "無效的章節ID格式" });
-    return;
-  }
-
-  const instructorId = req.user?.id;
-  const sectionRepo = AppDataSource.getRepository(Section);
-  const section = await sectionRepo.findOne({
-    where: { id: sectionId },
-    relations: ["course", "progresses"],
-  });
-
-  if (!section) {
-    res.status(404).json({ status: false, message: "找不到對應的章節" });
-    return;
-  }
-
-  if (!section.videoUrl) {
-    res.status(404).json({ status: false, message: "此章節沒有影片可刪除" });
-    return;
-  }
-
-  if (section.course.instructorId !== instructorId) {
-    res.status(403).json({ status: false, message: "您無權刪除此章節的影片" });
-    return;
-  }
-
-  if (section.isPublished) {
-    const orderRepo = AppDataSource.getRepository(Order);
-    const orderCount = await orderRepo.count({
-      where: { course: { id: section.course.id } },
-    });
-    const hasProgress = (section.progresses?.length || 0) > 0;
-
-    if (orderCount > 0 || hasProgress) {
-      res.status(422).json({ status: false, message: "章節已公開或已有觀看紀錄，無法刪除影片" });
+  try {
+    if (!parsed.success) {
+      res.status(400).json({ status: "fail", message: "無效的章節ID格式" });
       return;
     }
-  }
 
-  try {
+    const instructorId = req.user?.id;
+    const sectionRepo = AppDataSource.getRepository(Section);
+    const section = await sectionRepo.findOne({
+      where: { id: sectionId },
+      relations: ["course", "progresses"],
+    });
+
+    if (!section) {
+      res.status(404).json({ status: "fail", message: "找不到對應的章節" });
+      return;
+    }
+
+    if (!section.videoUrl) {
+      res.status(404).json({ status: "fail", message: "此章節沒有影片可刪除" });
+      return;
+    }
+
+    if (section.course.instructorId !== instructorId) {
+      res.status(403).json({ status: "fail", message: "您無權刪除此章節的影片" });
+      return;
+    }
+
+    if (section.isPublished) {
+      const orderRepo = AppDataSource.getRepository(Order);
+      const orderCount = await orderRepo.count({
+        where: { course: { id: section.course.id } },
+      });
+      const hasProgress = (section.progresses?.length || 0) > 0;
+
+      if (orderCount > 0 || hasProgress) {
+        res.status(422).json({ status: "fail", message: "章節已公開或已有觀看紀錄，無法刪除影片" });
+        return;
+      }
+    }
+
     await deleteHLSFolderFromFirebase(section.id);
     await AppDataSource.query("UPDATE sections SET video_url = NULL WHERE id = $1", [section.id]);
 
