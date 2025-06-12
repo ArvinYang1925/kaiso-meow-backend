@@ -24,7 +24,8 @@ export async function getCourses(req: Request, res: Response, next: NextFunction
     const [courses, totalItems] = await AppDataSource.getRepository(Course).findAndCount({
       relations: ["instructor"],
       where: {
-        deleted_at: IsNull(), // 只撈取未刪除的課程
+        deleted_at: IsNull(), 
+        isPublished: true, // 只撈取未刪除且已發布的課程
       },
       skip,
       take: pageSize,
