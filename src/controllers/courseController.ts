@@ -24,7 +24,7 @@ export async function getCourses(req: Request, res: Response, next: NextFunction
     const [courses, totalItems] = await AppDataSource.getRepository(Course).findAndCount({
       relations: ["instructor"],
       where: {
-        deleted_at: IsNull(), 
+        deleted_at: IsNull(),
         isPublished: true, // 只撈取未刪除且已發布的課程
       },
       skip,
@@ -147,39 +147,10 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
  *
  * 此 API 取得指定課程的所有章節列表，根據章節順序排序
  */
-export async function getCourseSections(req: Request, res: Response, next: NextFunction) {
+export async function getCourseSections(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { courseId } = req.params;
-
-    if (!courseId) {
-      res.status(400).json({
-        status: "failed",
-        message: "課程 ID 是必填的",
-      });
-      return;
-    }
-
-    const parsed = uuidSchema.safeParse(courseId);
-
-    if (!parsed.success) {
-      const err = parsed.error.errors[0];
-      res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
-
-    const course = await AppDataSource.getRepository(Course)
-      .createQueryBuilder("course")
-      .where("course.id = :courseId", { courseId })
-      .andWhere("course.deleted_at IS NULL")
-      .getOne();
-
-    if (!course) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到該課程",
-      });
-      return;
-    }
+    const course = req.course;
 
     const sections = await AppDataSource.getRepository(Section)
       .createQueryBuilder("section")
@@ -194,8 +165,8 @@ export async function getCourseSections(req: Request, res: Response, next: NextF
       message: "成功取得該課程的章節清單",
       data: {
         course: {
-          id: course.id,
-          title: course.title,
+          id: course!.id,
+          title: course!.title,
         },
         sections: sections.map((section) => ({
           id: section.id,
@@ -221,38 +192,8 @@ export async function getCourseSections(req: Request, res: Response, next: NextF
 export async function getCourseProgress(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { courseId } = req.params;
-    const userId = req.user?.id;
-
-    // 驗證課程ID是否有效
-    if (!courseId) {
-      res.status(400).json({
-        status: "failed",
-        message: "課程 ID 是必填的",
-      });
-      return;
-    }
-
-    const parsed = uuidSchema.safeParse(courseId);
-    if (!parsed.success) {
-      const err = parsed.error.errors[0];
-      res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
-
-    // 驗證課程是否存在
-    const course = await AppDataSource.getRepository(Course)
-      .createQueryBuilder("course")
-      .where("course.id = :courseId", { courseId })
-      .andWhere("course.deleted_at IS NULL")
-      .getOne();
-
-    if (!course) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到該課程",
-      });
-      return;
-    }
+    const userId = req.user!.id;
+    const course = req.course;
 
     // 取得課程總章節數
     const totalSections = await AppDataSource.getRepository(Section)
@@ -267,7 +208,7 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
       .createQueryBuilder("progress")
       .innerJoin("progress.section", "section")
       .where("progress.user_id = :userId", { userId })
-      .andWhere("progress.course_id = :courseId", { courseId: course.id })
+      .andWhere("progress.course_id = :courseId", { courseId: course!.id })
       .andWhere("progress.is_completed = true")
       .andWhere("section.is_published = true")
       .andWhere("section.deleted_at IS NULL")
@@ -313,23 +254,7 @@ export async function getCourseProgress(req: AuthRequest, res: Response, next: N
 export async function markSectionComplete(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { courseId, sectionId } = req.params;
-    const userId = req.user?.id;
-
-    // 驗證課程ID是否有效
-    if (!courseId) {
-      res.status(400).json({
-        status: "failed",
-        message: "課程 ID 是必填的",
-      });
-      return;
-    }
-
-    const parsedCourseId = uuidSchema.safeParse(courseId);
-    if (!parsedCourseId.success) {
-      const err = parsedCourseId.error.errors[0];
-      res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
+    const userId = req.user!.id;
 
     // 驗證章節ID是否有效
     if (!sectionId) {
@@ -344,21 +269,6 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
     if (!parsedSectionId.success) {
       const err = parsedSectionId.error.errors[0];
       res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
-
-    // 驗證課程是否存在
-    const course = await AppDataSource.getRepository(Course)
-      .createQueryBuilder("course")
-      .where("course.id = :courseId", { courseId })
-      .andWhere("course.deleted_at IS NULL")
-      .getOne();
-
-    if (!course) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到該課程",
-      });
       return;
     }
 
@@ -447,23 +357,8 @@ export async function markSectionComplete(req: AuthRequest, res: Response, next:
 export async function getSectionDetail(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { courseId, sectionId } = req.params;
-    const userId = req.user?.id;
-
-    // 驗證課程ID是否有效
-    if (!courseId) {
-      res.status(400).json({
-        status: "failed",
-        message: "課程 ID 是必填的",
-      });
-      return;
-    }
-
-    const parsedCourseId = uuidSchema.safeParse(courseId);
-    if (!parsedCourseId.success) {
-      const err = parsedCourseId.error.errors[0];
-      res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
+    const userId = req.user!.id;
+    const course = req.course;
 
     // 驗證章節ID是否有效
     if (!sectionId) {
@@ -478,21 +373,6 @@ export async function getSectionDetail(req: AuthRequest, res: Response, next: Ne
     if (!parsedSectionId.success) {
       const err = parsedSectionId.error.errors[0];
       res.status(400).json({ status: "failed", message: err.message });
-      return;
-    }
-
-    // 驗證課程是否存在
-    const course = await AppDataSource.getRepository(Course)
-      .createQueryBuilder("course")
-      .where("course.id = :courseId", { courseId })
-      .andWhere("course.deleted_at IS NULL")
-      .getOne();
-
-    if (!course) {
-      res.status(404).json({
-        status: "failed",
-        message: "找不到該課程",
-      });
       return;
     }
 
@@ -552,7 +432,7 @@ export async function getSectionDetail(req: AuthRequest, res: Response, next: Ne
       content: currentSection.content,
       videoUrl: currentSection.videoUrl,
       courseId: courseId,
-      courseName: course.title,
+      courseName: course!.title,
       order: currentSection.orderIndex,
       progress,
       nextSection: nextSection ? { id: nextSection.id, title: nextSection.title } : null,

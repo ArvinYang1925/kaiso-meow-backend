@@ -1,9 +1,11 @@
 // src/middleware/isAuth.ts
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, JWTPayload } from "../utils/jwtUtils";
+import { Course } from "../entities/Course";
 
 export interface AuthRequest extends Request {
   user?: JWTPayload;
+  course?: Course;
 }
 
 export function isAuth(req: AuthRequest, res: Response, next: NextFunction) {
