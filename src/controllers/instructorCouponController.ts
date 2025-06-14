@@ -5,6 +5,8 @@ import { Coupon } from "../entities/Coupon";
 import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema, paginationSchema } from "../validator/commonValidationSchemas";
 import { IsNull } from "typeorm";
+import { formatDate } from "../utils/dateUtils";
+
 /**
  * API #47 POST - /api/v1/instructor/coupons
  *
@@ -98,10 +100,16 @@ export async function getCouponsByInstructor(req: AuthRequest, res: Response, ne
       select: ["id", "couponName", "type", "code", "value", "startsAt", "expiresAt"],
     });
 
+    const couponList = data.map((coupon) => ({
+      ...coupon,
+      startsAt: coupon.startsAt ? formatDate(coupon.startsAt) : null,
+      expiresAt: coupon.expiresAt ? formatDate(coupon.expiresAt) : null,
+    }));
+
     res.status(200).json({
       status: "success",
       data: {
-        couponList: data,
+        couponList,
         pagination: {
           currentPage: page,
           pageSize,

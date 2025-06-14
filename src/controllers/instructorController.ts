@@ -10,6 +10,7 @@ import { revenueReportSchema } from "../validator/revenueValidationSchema";
 import { bucket } from "../utils/firebaseUtils";
 import path from "path";
 import { groupOrdersByInterval, formatRevenueData, calculateRevenueSummary } from "../utils/revenueUtils";
+import { formatDate } from "../utils/dateUtils";
 
 /**
  * API #26 GET /api/v1/instructor/me
@@ -208,8 +209,8 @@ export async function getStudentsByInstructor(req: AuthRequest, res: Response, n
       name: s.name,
       email: s.email,
       phoneNumber: s.student?.phoneNumber || "",
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      createdAt: formatDate(s.createdAt),
+      updatedAt: formatDate(s.updatedAt),
     }));
 
     res.status(200).json({
