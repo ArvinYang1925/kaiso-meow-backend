@@ -4,6 +4,7 @@ import { Order } from "../entities/Order";
 import { Course } from "../entities/Course";
 import { AuthRequest } from "../middleware/isAuth";
 import { paginationSchema } from "../validator/commonValidationSchemas";
+import { formatDate } from "../utils/dateUtils";
 
 /**
  * API #44 GET -/api/v1/instructor/orders?page=1&pageSize=10
@@ -59,9 +60,9 @@ export async function getInstructorOrders(req: AuthRequest, res: Response, next:
       status: order.status,
       couponType: order.coupon?.type ?? null,
       couponValue: order.coupon?.value !== undefined ? parseFloat(order.coupon.value.toString()) : null,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      paidAt: order.paidAt,
+      createdAt: formatDate(order.createdAt),
+      updatedAt: formatDate(order.updatedAt),
+      paidAt: order.paidAt ? formatDate(order.paidAt) : null,
     }));
 
     res.json({
