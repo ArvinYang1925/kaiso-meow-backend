@@ -27,13 +27,12 @@ export async function createCoupon(req: AuthRequest, res: Response, next: NextFu
 
     const couponRepo = AppDataSource.getRepository(Coupon);
 
-    // 檢查是否有重複 code（同講師或全局唯一視需求）
+    // 檢查是否有重複 code跟type（同講師或全局唯一視需求）
     const exists = await couponRepo.findOne({
-      where: {
-        code: parsed.data.code,
-        instructorId: userId,
-        deletedAt: IsNull(),
-      },
+      where: [
+        { code: parsed.data.code, type: parsed.data.type, deletedAt: IsNull() },
+        { code: parsed.data.code, instructorId: userId, deletedAt: IsNull() },
+      ],
     });
 
     if (exists) {
