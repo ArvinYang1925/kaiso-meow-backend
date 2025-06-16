@@ -29,19 +29,24 @@ export async function createCoupon(req: AuthRequest, res: Response, next: NextFu
 
     const couponRepo = AppDataSource.getRepository(Coupon);
 
-    // 檢查是否有重複 code（同講師或全局唯一視需求）
-    const exists = await couponRepo.findOne({
-      where: {
-        code: parsed.data.code,
-        instructorId: userId,
-        deletedAt: IsNull(),
-      },
+    // 分別檢查 code 和 couponName 是否已存在
+    const existingCode = await couponRepo.findOne({
+      where: { code: parsed.data.code, deletedAt: IsNull() },
     });
 
-    if (exists) {
+    const existingName = await couponRepo.findOne({
+      where: { couponName: parsed.data.couponName, deletedAt: IsNull() },
+    });
+
+    if (existingCode || existingName) {
       res.status(409).json({
         status: "failed",
-        message: "折扣碼已存在，請使用其他代碼",
+        message:
+          existingCode && existingName
+            ? "折扣碼代碼和名稱都已存在，請使用其他代碼和名稱"
+            : existingCode
+              ? "折扣碼代碼已存在，請使用其他代碼"
+              : "折扣碼名稱已存在，請使用其他名稱",
       });
       return;
     }
