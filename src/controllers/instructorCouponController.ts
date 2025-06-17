@@ -174,6 +174,13 @@ export async function deleteCoupon(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+/**
+ * API #54 POST - /api/v1/instructor/coupons/ai-generate
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-coupons-ai-generate-20c6a246851880cbb68cd9f04bb4d6a6?source=copy_link)
+ *
+ * 此 API 讓講師可用AI折扣碼草稿產生
+ */
 export async function generateAICoupons(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const result = aiCouponPlanInputSchema.safeParse(req.body);
