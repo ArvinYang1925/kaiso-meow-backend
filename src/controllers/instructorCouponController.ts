@@ -6,7 +6,8 @@ import { AuthRequest } from "../middleware/isAuth";
 import { uuidSchema, paginationSchema } from "../validator/commonValidationSchemas";
 import { IsNull } from "typeorm";
 import { formatDate } from "../utils/dateUtils";
-
+import { generateCouponsPlan } from "../services/aiService";
+import { aiCouponPlanInputSchema, aiCouponPlanResponseSchema } from "../validator/couponVaildationschema";
 /**
  * API #47 POST - /api/v1/instructor/coupons
  *
@@ -170,5 +171,51 @@ export async function deleteCoupon(req: AuthRequest, res: Response, next: NextFu
     res.status(200).json({ status: "success", message: "折扣碼刪除成功" });
   } catch (error) {
     next(error);
+  }
+}
+
+export async function generateAICoupons(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const result = aiCouponPlanInputSchema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({
+        status: "fail",
+        message: result.error.errors.map((e) => e.message).join(", "),
+      });
+      return;
+    }
+
+    const { courseDescription, launchDate, numberOfPhases, discountType, keywordThemes, phaseDurationDays } = result.data;
+    const instructorId = req.user?.id;
+
+    if (!instructorId) {
+      res.status(401).json({ status: "fail", message: "未授權，請重新登入" });
+      return;
+    }
+
+    const aiResult = await generateCouponsPlan({
+      description: courseDescription,
+      keywordThemes,
+      numberOfPhases,
+      launchDate,
+      discountType,
+      phaseDurationDays,
+    });
+
+    const parsed = aiCouponPlanResponseSchema.safeParse(aiResult);
+    if (!parsed.success) {
+      res.status(422).json({
+        status: "fail",
+        message: "AI 回傳格式錯誤：" + parsed.error.errors.map((e) => e.message).join(", "),
+      });
+      return;
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: parsed.data,
+    });
+  } catch (err) {
+    next(err);
   }
 }

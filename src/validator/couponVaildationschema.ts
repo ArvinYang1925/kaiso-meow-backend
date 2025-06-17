@@ -38,3 +38,28 @@ export const createCouponSchema = z
       }
     }
   });
+
+export const aiCouponPlanInputSchema = z.object({
+  courseDescription: z.string().min(10),
+  launchDate: z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+    message: "launchDate 格式錯誤，應為 YYYY-MM-DD",
+  }),
+  numberOfPhases: z.number().int().min(1).max(5),
+  discountType: z.enum(["fixed", "percent"]),
+  keywordThemes: z.string().optional(),
+  phaseDurationDays: z.number().min(1).optional(),
+});
+
+const couponItemSchema = z.object({
+  couponName: z.string().min(1),
+  type: z.enum(["fixed", "percent"]),
+  code: z.string().min(1),
+  value: z.number().nonnegative(),
+  startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "startsAt 格式錯誤"),
+  expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expiresAt 格式錯誤"),
+});
+
+export const aiCouponPlanResponseSchema = z.object({
+  strategySummary: z.string().min(1),
+  coupons: z.array(couponItemSchema).min(1),
+});
