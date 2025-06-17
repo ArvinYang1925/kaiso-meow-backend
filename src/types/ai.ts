@@ -14,3 +14,12 @@ export interface AIResponseSections {
   count: number;
   sections: Section[];
 }
+
+export interface GeneratePromotionPlanParams {
+  description: string;
+  keywordThemes?: string;
+  numberOfPhases: number;
+  launchDate: string;
+  discountType: "fixed" | "percent";
+  phaseDurationDays?: number;
+}
