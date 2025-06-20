@@ -534,12 +534,16 @@ export async function getMyLearningCourses(req: AuthRequest, res: Response, next
       // 計算完成進度百分比
       const progressPercentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
 
+      // 添加 isReady 參數
+      const isReady = totalSections > 0;
+
       return {
         courseId: course.id,
         title: course.title,
         coverUrl: course.coverUrl,
         progressPercentage,
         instructorName: course.instructor?.name || "",
+        isReady, // 新增的參數
       };
     });
 
