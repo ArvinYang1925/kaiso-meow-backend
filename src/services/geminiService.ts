@@ -30,7 +30,7 @@ export async function generateSectionsWithGemini(params: GenerateSectionsParams)
               type: Type.OBJECT,
               properties: {
                 title: { type: Type.STRING },
-                description: { type: Type.STRING },
+                content: { type: Type.STRING },
               },
               required: ["title", "content"],
             },
