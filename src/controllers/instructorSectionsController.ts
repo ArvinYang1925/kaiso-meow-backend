@@ -398,6 +398,16 @@ export async function generateCourseSections(req: AuthRequest, res: Response, ne
   }
   const { description, expectedSectionCount, sectionIdea } = parsedBody.data;
 
+  // 檢查章節數量限制
+  const maxSectionCount = parseInt(process.env.MAX_SECTION_COUNT || "12");
+  if (expectedSectionCount && expectedSectionCount > maxSectionCount) {
+    res.status(400).json({
+      status: "fail",
+      message: `超過最大可以產生章節數量 (${maxSectionCount})`,
+    });
+    return;
+  }
+
   try {
     const course = await AppDataSource.getRepository(Course).findOne({
       where: {
