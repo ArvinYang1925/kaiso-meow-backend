@@ -7,7 +7,8 @@ import { uuidSchema, paginationSchema } from "../validator/commonValidationSchem
 import { IsNull } from "typeorm";
 import { formatDate } from "../utils/dateUtils";
 import { generateCouponsPlan } from "../services/aiService";
-import { aiCouponPlanInputSchema, aiCouponPlanResponseSchema } from "../validator/couponVaildationschema";
+import { QueryRunner, In } from "typeorm";
+import { aiCouponPlanInputSchema, aiCouponPlanResponseSchema, createBatchCouponsSchema } from "../validator/couponVaildationschema";
 /**
  * API #47 POST - /api/v1/instructor/coupons
  *
@@ -222,6 +223,96 @@ export async function generateAICoupons(req: AuthRequest, res: Response, next: N
       status: "success",
       data: parsed.data,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * API #55 POST - /api/v1/instructor/coupons/batch
+ *
+ * 📘 [API 文件 Notion 連結](https://www.notion.so/POST-api-v1-instructor-coupons-batch-20c6a246851880d6b1e9f93063a73b1d?source=copy_link)
+ *
+ * 此 API 讓講師可批量新增折扣碼
+ */
+export async function createBatchCoupons(req: AuthRequest, res: Response, next: NextFunction) {
+  const instructorId = req.user?.id;
+
+  try {
+    const parsed = createBatchCouponsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0]?.message || "參數驗證失敗";
+      res.status(400).json({ status: "fail", message: firstError });
+      return;
+    }
+
+    const { coupons } = parsed.data;
+
+    const queryRunner: QueryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const codes = coupons.map((c) => c.code);
+      const names = coupons.map((c) => c.couponName);
+
+      const existed = await queryRunner.manager.find(Coupon, {
+        where: [
+          { code: In(codes), instructorId },
+          { couponName: In(names), instructorId },
+        ],
+        select: ["code", "couponName"],
+      });
+
+      if (existed.length > 0) {
+        const duplicatedCodes = existed.map((e) => e.code);
+        const duplicatedNames = existed.map((e) => e.couponName);
+        const duplicateMessage = [
+          duplicatedCodes.length ? `code：${duplicatedCodes.join(", ")}` : null,
+          duplicatedNames.length ? `couponName：${duplicatedNames.join(", ")}` : null,
+        ]
+          .filter(Boolean)
+          .join("，");
+
+        await queryRunner.rollbackTransaction();
+        res.status(409).json({
+          status: "fail",
+          message: `以下欄位重複：${duplicateMessage}`,
+        });
+        return;
+      }
+
+      const newCoupons = coupons.map((c) =>
+        queryRunner.manager.create(Coupon, {
+          ...c,
+          startsAt: new Date(c.startsAt),
+          expiresAt: new Date(c.expiresAt),
+          instructorId,
+        }),
+      );
+
+      const saved = await queryRunner.manager.save(newCoupons);
+      await queryRunner.commitTransaction();
+
+      res.status(200).json({
+        status: "success",
+        data: {
+          couponList: saved.map(({ couponName, type, code, value, startsAt, expiresAt }) => ({
+            couponName,
+            type,
+            code,
+            value,
+            startsAt,
+            expiresAt,
+          })),
+        },
+      });
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   } catch (err) {
     next(err);
   }

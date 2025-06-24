@@ -63,3 +63,7 @@ export const aiCouponPlanResponseSchema = z.object({
   strategySummary: z.string().min(1),
   coupons: z.array(couponItemSchema).min(1),
 });
+
+export const createBatchCouponsSchema = z.object({
+  coupons: z.array(couponItemSchema).min(1, "請至少輸入一筆折扣碼"),
+});
