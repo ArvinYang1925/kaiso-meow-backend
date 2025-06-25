@@ -187,7 +187,7 @@ export async function generateAICoupons(req: AuthRequest, res: Response, next: N
     const result = aiCouponPlanInputSchema.safeParse(req.body);
     if (!result.success) {
       res.status(400).json({
-        status: "fail",
+        status: "failed",
         message: result.error.errors.map((e) => e.message).join(", "),
       });
       return;
@@ -197,7 +197,7 @@ export async function generateAICoupons(req: AuthRequest, res: Response, next: N
     const instructorId = req.user?.id;
 
     if (!instructorId) {
-      res.status(401).json({ status: "fail", message: "未授權，請重新登入" });
+      res.status(401).json({ status: "failed", message: "未授權，請重新登入" });
       return;
     }
 
@@ -213,7 +213,7 @@ export async function generateAICoupons(req: AuthRequest, res: Response, next: N
     const parsed = aiCouponPlanResponseSchema.safeParse(aiResult);
     if (!parsed.success) {
       res.status(422).json({
-        status: "fail",
+        status: "failed",
         message: "AI 回傳格式錯誤：" + parsed.error.errors.map((e) => e.message).join(", "),
       });
       return;
@@ -242,7 +242,7 @@ export async function createBatchCoupons(req: AuthRequest, res: Response, next: 
     const parsed = createBatchCouponsSchema.safeParse(req.body);
     if (!parsed.success) {
       const firstError = parsed.error.errors[0]?.message || "參數驗證失敗";
-      res.status(400).json({ status: "fail", message: firstError });
+      res.status(400).json({ status: "failed", message: firstError });
       return;
     }
 
@@ -276,7 +276,7 @@ export async function createBatchCoupons(req: AuthRequest, res: Response, next: 
 
         await queryRunner.rollbackTransaction();
         res.status(409).json({
-          status: "fail",
+          status: "failed",
           message: `以下欄位重複：${duplicateMessage}`,
         });
         return;
