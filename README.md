@@ -227,5 +227,28 @@ src/
 
 ---
 
+## 👨‍💻 貢獻者與工作分配
+
+本專案由以下三位後端開發人員共同完成：
+
+### 貢獻者 Arvin
+- 負責範圍：學生_登入登出、課程瀏覽與學習、講師_上傳大頭照&更新密碼、講師_課程管理(課程封面圖片上傳、刪除課程)
+- 主要開發模組：authController、courseController、instructorCoursesController
+- GitHub: [Arvin的GitHub](https://github.com/ArvinYang1925)
+
+### 貢獻者 Janet 
+- 負責範圍：訂單支付、電子報、課程瀏覽與學習(課程列表、課程詳細資訊)、學生_個人資料系列、講師_查看收益報表
+- 主要開發模組：courseController、OrderController、newSletterController
+- GitHub: [Janet的GitHub](https://github.com/CHING-WENLAI1031)
+
+### 貢獻者 海螺
+- 負責範圍：學生_忘記密碼&重設定、講師AI系列功能、章節管理、影片管理、講師_課程管理(創建、獲取課程列表、獲取課程詳細資訊、更新課程資訊)、優惠券管理、講師_個人資料系列 
+- 主要開發模組：passwordController、instructorController、instructorOrdersController、instructorCoursesController、instructorSectionsController、instructorVideoController、instructorCouponController
+- GitHub: [海螺的GitHub](https://github.com/peter6601)
+
+---
+
 ## 📄 授權
 ISC License
+
+---
