@@ -275,7 +275,7 @@ export async function getInstructorRevenue(req: AuthRequest, res: Response, next
     const allOrders = await query.select(["order.id", "order.orderPrice", "order.paidAt", "order.courseId"]).getMany();
 
     if (courseId && allOrders.length === 0) {
-      res.status(400).json({
+      res.status(408).json({
         status: "failed",
         message: `找不到課程 ID 為 ${courseId} 的訂單。`,
       });
