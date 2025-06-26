@@ -66,9 +66,10 @@ export async function getCourses(req: Request, res: Response, next: NextFunction
  *
  * 此 API 用於獲取單一課程的詳細資訊
  */
-export async function getCourseDetail(req: Request, res: Response, next: NextFunction) {
+export async function getCourseDetail(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { courseId } = req.params;
+    const userId = req.user?.id;
 
     if (!courseId) {
       res.status(400).json({
@@ -107,6 +108,19 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
       return;
     }
 
+    let isPurchased = false;
+    // 如果使用者已登入，檢查是否已購買課程
+    if (userId) {
+      const purchasedOrder = await AppDataSource.getRepository(Order)
+        .createQueryBuilder("order")
+        .where("order.user_id = :userId", { userId })
+        .andWhere("order.course_id = :courseId", { courseId })
+        .andWhere("order.status = :status", { status: "paid" }) // 只檢查已支付的訂單
+        .getOne();
+
+      isPurchased = !!purchasedOrder;
+    }
+
     const courseData = {
       id: course.id,
       title: course.title,
@@ -118,6 +132,7 @@ export async function getCourseDetail(req: Request, res: Response, next: NextFun
       price: course.isFree ? 0 : course.price,
       isFree: course.isFree,
       coverUrl: course.coverUrl,
+      isPurchased,
       instructor: {
         id: course.instructor?.id,
         name: course.instructor?.name,
