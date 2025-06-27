@@ -40,14 +40,18 @@ export const createCouponSchema = z
   });
 
 export const aiCouponPlanInputSchema = z.object({
-  courseDescription: z.string().min(10),
-  launchDate: z.string().refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
-    message: "launchDate 格式錯誤，應為 YYYY-MM-DD",
+  courseDescription: z.string({ message: "請填寫課程描述" }).min(8, { message: "課程描述至少 8 字元" }),
+  launchDate: z.string({ message: "請填寫開課日期" }).refine((val) => /^\d{4}-\d{2}-\d{2}$/.test(val), {
+    message: "開課日期格式錯誤，應為 YYYY-MM-DD",
   }),
-  numberOfPhases: z.number().int().min(1).max(5),
-  discountType: z.enum(["fixed", "percent"]),
-  keywordThemes: z.string().optional(),
-  phaseDurationDays: z.number().min(1).optional(),
+  numberOfPhases: z
+    .number({ message: "請填寫促銷階段數" })
+    .int({ message: "促銷階段數必須為整數" })
+    .min(1, { message: "促銷階段數至少 1" })
+    .max(6, { message: "促銷階段數最多 6" }),
+  discountType: z.enum(["fixed", "percent"], { message: "折扣類型必須是 fixed 或 percent" }),
+  keywordThemes: z.string({ message: "請填寫主題關鍵字" }).optional(),
+  phaseDurationDays: z.number({ message: "請填寫每階段天數" }).min(1, { message: "每階段天數至少 1 天" }).optional(),
 });
 
 const couponItemSchema = z
