@@ -96,3 +96,18 @@ export async function deleteHLSFolderFromFirebase(sectionId: string) {
   const deletePromises = files.map((file) => file.delete());
   await Promise.all(deletePromises);
 }
+
+/**
+ * 刪除指定 section 的單一影片
+ * @param sectionId 章節 ID
+ * @param ext 副檔名（包含 .）
+ */
+export async function deleteVideoFromFirebase(sectionId: string, ext: string) {
+  const filePath = `sections/${sectionId}/video${ext}`;
+  const file = bucket.file(filePath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new Error("找不到影片檔案");
+  }
+  await file.delete();
+}

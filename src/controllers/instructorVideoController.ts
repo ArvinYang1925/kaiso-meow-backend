@@ -5,7 +5,7 @@ import { Order } from "../entities/Order";
 import { uuidSchema } from "../validator/commonValidationSchemas";
 import { AuthRequest } from "../middleware/isAuth";
 import { simpleQueue } from "../utils/simpleQueue";
-import { deleteHLSFolderFromFirebase } from "../utils/firebaseUtils";
+import { deleteVideoFromFirebase } from "../utils/firebaseUtils";
 import { handleVideoUploadTask } from "../services/videoTranscodeService";
 
 /**
@@ -289,7 +289,28 @@ export async function deleteSectionVideo(req: AuthRequest, res: Response, next: 
       }
     }
 
-    await deleteHLSFolderFromFirebase(section.id);
+    // 取得副檔名
+    let ext = "";
+    try {
+      const url = new URL(section.videoUrl);
+      const pathname = url.pathname;
+      const match = pathname.match(/video(\.[a-zA-Z0-9]+)$/);
+      ext = match ? match[1] : "";
+    } catch {
+      /* ignore */
+    }
+
+    if (ext) {
+      await deleteVideoFromFirebase(section.id, ext);
+    } else {
+      // fallback: 若無法判斷副檔名，仍嘗試刪除 mp4
+      try {
+        await deleteVideoFromFirebase(section.id, ".mp4");
+      } catch {
+        /* ignore */
+      }
+    }
+
     await AppDataSource.query("UPDATE sections SET video_url = NULL WHERE id = $1", [section.id]);
 
     res.status(200).json({
