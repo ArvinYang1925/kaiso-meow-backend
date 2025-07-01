@@ -4,7 +4,13 @@ import { getInstructorOrders } from "../controllers/instructorOrdersController";
 import { isInstructor } from "../middleware/isInstructor";
 import { isAuth } from "../middleware/isAuth";
 import { imageUpload } from "../middleware/imageUpload";
-import { createCoupon, getCouponsByInstructor, deleteCoupon } from "../controllers/instructorCouponController";
+import {
+  createCoupon,
+  getCouponsByInstructor,
+  deleteCoupon,
+  generateAICoupons,
+  createBatchCoupons,
+} from "../controllers/instructorCouponController";
 import {
   createCourse,
   getCourseDetailByInstructor,
@@ -62,6 +68,8 @@ router.post(
 );
 
 router.post("/coupons", isAuth, isInstructor, createCoupon);
+router.post("/coupons/ai-generate", isAuth, isInstructor, generateAICoupons);
+router.post("/coupons/batch", isAuth, isInstructor, createBatchCoupons);
 router.get("/coupons", isAuth, isInstructor, getCouponsByInstructor);
 router.delete("/coupons/:id", isAuth, isInstructor, deleteCoupon);
 
