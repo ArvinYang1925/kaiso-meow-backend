@@ -73,7 +73,7 @@ ${discountType}
   "coupons": [
     {
       "couponName": "標題",
-      "type": "fixed" | "percent",
+      "type": "fixed" | "percentage",
       "code": "代碼",
       "value": 數字,
       "startsAt": "YYYY-MM-DD",

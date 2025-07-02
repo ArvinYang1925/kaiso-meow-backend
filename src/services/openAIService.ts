@@ -59,7 +59,7 @@ ${keywordThemes || "無"}
 ${launchDate}
 
 折扣型態：
-${discountType}（fixed 表示固定金額；percent 表示百分比）
+${discountType}（fixed 表示固定金額；percentage 表示百分比）
 
 每段促銷期持續天數：
 ${phaseDurationDays} 天
@@ -71,7 +71,7 @@ ${phaseDurationDays} 天
   "coupons": [
     {
       "couponName": "中文標題",
-      "type": "fixed" | "percent",
+      "type": "fixed" | "percentage",
       "code": "折扣碼",
       "value": 數字,
       "startsAt": "YYYY-MM-DD",
