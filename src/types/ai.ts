@@ -20,6 +20,6 @@ export interface GeneratePromotionPlanParams {
   keywordThemes?: string;
   numberOfPhases: number;
   launchDate: string;
-  discountType: "fixed" | "percent";
+  discountType: "fixed" | "percentage";
   phaseDurationDays?: number;
 }
