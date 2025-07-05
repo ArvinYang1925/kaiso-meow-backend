@@ -37,8 +37,11 @@ export async function createCoupon(req: AuthRequest, res: Response, next: NextFu
     });
 
     const existingName = await couponRepo.findOne({
-      where: { couponName: parsed.data.couponName, deletedAt: IsNull() },
+      where: { couponName: parsed.data.couponName },
+      withDeleted: true,
     });
+
+    console.log("exist coupon code & name ", existingCode, existingName, parsed.data.couponName);
 
     if (existingCode || existingName) {
       res.status(409).json({
