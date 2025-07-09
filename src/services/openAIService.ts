@@ -61,6 +61,8 @@ ${launchDate}
 折扣型態：
 ${discountType}（fixed 表示固定金額；percentage 表示百分比）
 
+【重要】若 type 為 percentage，value 必須介於 1~99 之間。
+
 每段促銷期持續天數：
 ${phaseDurationDays} 天
 

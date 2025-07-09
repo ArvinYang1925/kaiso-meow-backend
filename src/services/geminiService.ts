@@ -67,6 +67,8 @@ ${keywordThemes || "無"}
 折扣類型：
 ${discountType}
 
+【重要】若 type 為 percentage，value 必須介於 1~99 之間。
+
 請輸出 JSON，格式如下：
 {
   "strategySummary": "摘要說明",
